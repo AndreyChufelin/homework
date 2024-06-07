@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require" //nolint:depguard
 )
 
 func TestUnpack(t *testing.T) {
@@ -17,10 +17,10 @@ func TestUnpack(t *testing.T) {
 		{input: "", expected: ""},
 		{input: "aaa0b", expected: "aab"},
 		// uncomment if task with asterisk completed
-		// {input: `qwe\4\5`, expected: `qwe45`},
-		// {input: `qwe\45`, expected: `qwe44444`},
-		// {input: `qwe\\5`, expected: `qwe\\\\\`},
-		// {input: `qwe\\\3`, expected: `qwe\3`},
+		{input: `qwe\4\5`, expected: `qwe45`},
+		{input: `qwe\45`, expected: `qwe44444`},
+		{input: `qwe\\5`, expected: `qwe\\\\\`},
+		{input: `qwe\\\3`, expected: `qwe\3`},
 	}
 
 	for _, tc := range tests {
@@ -42,4 +42,28 @@ func TestUnpackInvalidString(t *testing.T) {
 			require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
 		})
 	}
+}
+
+func TestUnpackNumber(t *testing.T) {
+	tc := "ab30c"
+	t.Run(tc, func(t *testing.T) {
+		_, err := Unpack(tc)
+		require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+	})
+}
+
+func TestUnpackFirstSybmolIsDigit(t *testing.T) {
+	tc := "3abc"
+	t.Run(tc, func(t *testing.T) {
+		_, err := Unpack(tc)
+		require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+	})
+}
+
+func TestUnpackEscapeCharacterBeforeLetter(t *testing.T) {
+	tc := `ab\c`
+	t.Run(tc, func(t *testing.T) {
+		_, err := Unpack(tc)
+		require.Truef(t, errors.Is(err, ErrInvalidString), "actual error %q", err)
+	})
 }
