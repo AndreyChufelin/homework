@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require" //nolint:depguard
 )
 
 func TestCache(t *testing.T) {
@@ -50,7 +50,29 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(3)
+		c.Set("a", 1)
+		c.Set("b", 2)
+		c.Set("c", 3)
+		c.Set("d", 4)
+
+		v, ok := c.Get("a")
+		require.False(t, ok)
+		require.Nil(t, v)
+	})
+	t.Run("purge logic complex", func(t *testing.T) {
+		c := NewCache(3)
+		c.Set("a", 1)
+		c.Set("b", 2)
+		c.Set("c", 3)
+
+		c.Set("b", 22)
+		c.Get("a")
+		c.Set("d", 4)
+
+		v, ok := c.Get("c")
+		require.False(t, ok)
+		require.Nil(t, v)
 	})
 }
 
