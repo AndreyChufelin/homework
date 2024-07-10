@@ -6,20 +6,29 @@ import (
 	"sync/atomic"
 )
 
-var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
+var (
+	ErrErrorsLimitExceeded   = errors.New("errors limit exceeded")
+	ErrInvalidGoroutineCount = errors.New("invalid goroutine count")
+)
 
 type Task func() error
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
-	tasksCh := make(chan Task)
-	var errorCount atomic.Int64
+	if m <= 0 {
+		return ErrErrorsLimitExceeded
+	}
+	if n <= 0 {
+		return ErrInvalidGoroutineCount
+	}
 
-	var wg sync.WaitGroup
-	defer func() {
-		close(tasksCh)
-		wg.Wait()
-	}()
+	var (
+		err        error
+		errorCount atomic.Int64
+		wg         sync.WaitGroup
+	)
+
+	tasksCh := make(chan Task)
 
 	for range n {
 		wg.Add(1)
@@ -37,11 +46,15 @@ func Run(tasks []Task, n, m int) error {
 
 	for _, t := range tasks {
 		if errorCount.Load() >= int64(m) {
-			return ErrErrorsLimitExceeded
+			err = ErrErrorsLimitExceeded
+			break
 		}
 
 		tasksCh <- t
 	}
 
-	return nil
+	close(tasksCh)
+	wg.Wait()
+
+	return err
 }
