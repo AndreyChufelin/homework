@@ -29,40 +29,74 @@ func TestCopy(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := Copy(inputPath, outPath, tc.offset, tc.limit, nil)
+			err := Copy(inputPath, outPath, tc.offset, tc.limit)
+			if err != nil {
+				require.NoError(t, err, "Error copying file")
+			}
+
 			expectedPath := fmt.Sprintf("./testdata/out_offset%d_limit%d.txt", tc.offset, tc.limit)
-			expected, _ := os.ReadFile(expectedPath)
+			expected, err := os.ReadFile(expectedPath)
+			if err != nil {
+				require.NoError(t, err, "Error reading expected file")
+			}
+
 			out, _ := os.ReadFile(outPath)
+			if err != nil {
+				require.NoError(t, err, "Error reading output file")
+			}
 
 			require.Equal(t, expected, out)
-			require.NoError(t, err)
 		})
 	}
 
 	t.Run("Offset is bigger than file size", func(t *testing.T) {
-		err := Copy(inputPath, outPath, 10000, 0, nil)
+		err := Copy(inputPath, outPath, 10000, 0)
 		require.ErrorIs(t, err, ErrOffsetExceedsFileSize)
 	})
 
 	if err := os.Remove(outPath); err != nil {
-		panic("Couldn't delete output file")
+		require.NoError(t, err, "Error removing output file")
 	}
 }
 
-func TestCopyLoadig(t *testing.T) {
-	loadingCh := make(chan int64)
-	go func() {
-		err := Copy(inputPath, outPath, 0, 100, loadingCh)
-		require.NoError(t, err)
-	}()
-
-	i := int64(1)
-	for c := range loadingCh {
-		require.Equal(t, i, c)
-		i++
+func TestCopyErrors(t *testing.T) {
+	tests := []struct {
+		name   string
+		offset int64
+		limit  int64
+		err    error
+	}{
+		{name: "Offset is bigger than file size", offset: 10000, limit: 0, err: ErrOffsetExceedsFileSize},
+		{name: "Offset is negative", offset: -10, limit: 0, err: ErrInvalidOffset},
+		{name: "Limit is negative", offset: 0, limit: -10, err: ErrLimitOffset},
 	}
 
-	if err := os.Remove(outPath); err != nil {
-		panic("Couldn't delete output file")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Copy(inputPath, outPath, tc.offset, tc.limit)
+			require.ErrorIs(t, tc.err, err)
+		})
 	}
+}
+
+func TestCopySameFiles(t *testing.T) {
+	t.Run("From file and to file are the same", func(t *testing.T) {
+		path := "./testdata/same_file_input.txt"
+		err := os.WriteFile(path, []byte("From file and to file are the same"), 0o644)
+		if err != nil {
+			require.NoError(t, err, "Error writing file")
+		}
+
+		err = Copy(path, path, 0, 10)
+		if err != nil {
+			require.NoError(t, err, "Error copying file")
+		}
+
+		file, err := os.ReadFile(path)
+		if err != nil {
+			require.NoError(t, err, "Error reading file")
+		}
+
+		require.Equal(t, "From file ", string(file))
+	})
 }

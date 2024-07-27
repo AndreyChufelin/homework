@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"strings"
+	"os"
 )
 
 var (
@@ -21,35 +21,10 @@ func init() {
 func main() {
 	flag.Parse()
 
-	loadingCh := make(chan int64)
-
-	go func() {
-		if err := Copy(from, to, offset, limit, loadingCh); err != nil {
-			fmt.Println("Error: ", err)
-		}
-	}()
-
-	for c := range loadingCh {
-		fmt.Print(getProgressbar(c))
+	if err := Copy(from, to, offset, limit); err != nil {
+		fmt.Println("Error: ", err)
+		os.Exit(1)
 	}
 
 	fmt.Print("\n")
-}
-
-func getProgressbar(percent int64) string {
-	var result strings.Builder
-	result.WriteString("\r\033[0K[")
-
-	maxBarLength := int64(20)
-	filledBarLength := percent / (100 / maxBarLength)
-
-	for range filledBarLength {
-		result.WriteString("#")
-	}
-	for range maxBarLength - filledBarLength {
-		result.WriteString(" ")
-	}
-
-	result.WriteString(fmt.Sprintf("] %d%%", percent))
-	return result.String()
 }
