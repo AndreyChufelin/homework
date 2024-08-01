@@ -42,20 +42,8 @@ func ReadDir(dir string) (Environment, error) {
 			continue
 		}
 
-		file, err := os.Open(filepath.Join(dir, fInfo.Name()))
+		value, err := getValueFromFile(filepath.Join(dir, fInfo.Name()))
 		if err != nil {
-			return nil, err
-		}
-		defer file.Close()
-
-		scanner := bufio.NewScanner(file)
-
-		scanner.Scan()
-		v := scanner.Bytes()
-		v = bytes.ReplaceAll(v, []byte("\x00"), []byte("\n"))
-		value := strings.TrimRight(string(v), " \t\n")
-
-		if err := scanner.Err(); err != nil {
 			return nil, err
 		}
 
@@ -63,4 +51,25 @@ func ReadDir(dir string) (Environment, error) {
 	}
 
 	return env, nil
+}
+
+func getValueFromFile(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	scanner.Scan()
+	v := scanner.Bytes()
+	v = bytes.ReplaceAll(v, []byte("\x00"), []byte("\n"))
+	value := strings.TrimRight(string(v), " \t\n")
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return value, nil
 }
