@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/AndreyChufelin/homework/hw09_struct_validator/validators/str"
 	"github.com/stretchr/testify/require"
 )
 
@@ -147,12 +148,6 @@ func TestValidateValidatorErrors(t *testing.T) {
 			expectedErr: fmt.Errorf("ID: value is too long\nAge: value is too big\nEmail: value doesn't match regexp\n" +
 				"Role: value doesn't exist in set admin,stuff\nPhones[0]: value is too short"),
 		},
-		{
-			in: wrongValue{
-				Name: "John",
-			},
-			expectedErr: fmt.Errorf("Name: invalid value for length validator"),
-		},
 	}
 
 	for i, tt := range tests {
@@ -177,6 +172,12 @@ func TestValidateInternalErrors(t *testing.T) {
 				Name: "John",
 			},
 			expectedErr: ErrInvalidValidator,
+		},
+		{
+			in: wrongValue{
+				Name: "John",
+			},
+			expectedErr: str.ErrInvalidValue,
 		},
 	}
 

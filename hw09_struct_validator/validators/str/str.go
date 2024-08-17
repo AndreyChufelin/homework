@@ -13,17 +13,19 @@ var (
 	ErrLenIsTooShort     = errors.New("value is too short")
 	ErrRegexpNoMatch     = errors.New("value doesn't match regexp")
 	ErrInNotContainValue = errors.New("value doesn't exist in set")
+	ErrInvalidValue      = errors.New("invalid value")
 )
 
 func LenValidator(s, val string) error {
 	v, err := strconv.Atoi(val)
 	if err != nil {
-		return fmt.Errorf("invalid value for length validator")
+		return fmt.Errorf("length validator: %w", ErrInvalidValue)
 	}
 
 	if len(s) > v {
 		return ErrLenIsTooLong
-	} else if len(s) < v {
+	}
+	if len(s) < v {
 		return ErrLenIsTooShort
 	}
 
@@ -33,7 +35,7 @@ func LenValidator(s, val string) error {
 func RegexpValidator(s, val string) error {
 	r, err := regexp.Compile(val)
 	if err != nil {
-		return fmt.Errorf("invalid value for regexp validator")
+		return fmt.Errorf("regexp validator: %w", ErrInvalidValue)
 	}
 
 	if !r.MatchString(s) {

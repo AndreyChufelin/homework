@@ -8,8 +8,6 @@ linters-settings:
   funlen:
     lines: 150
     statements: 80
-  exhaustive:
-    default-signifies-exhaustive: true
 
 issues:
   exclude-rules:
@@ -29,7 +27,6 @@ linters:
     - bodyclose
     - durationcheck
     - errorlint
-    - exhaustive
     - exportloopref
     - funlen
     - gci

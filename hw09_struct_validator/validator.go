@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/AndreyChufelin/homework/hw09_struct_validator/validators"
+	"github.com/AndreyChufelin/homework/hw09_struct_validator/validators/intv"
+	"github.com/AndreyChufelin/homework/hw09_struct_validator/validators/str"
 )
 
 type ValidationError struct {
@@ -45,7 +47,9 @@ func Validate(v interface{}) error {
 		return nil
 	}
 	for i := 0; i < value.NumField(); i++ {
-		tags := strings.Split(reflect.TypeOf(v).Field(i).Tag.Get("validate"), "|")
+		field := value.Field(i)
+		structField := value.Type().Field(i)
+		tags := strings.Split(structField.Tag.Get("validate"), "|")
 
 		for _, tag := range tags {
 			if tag == "" {
@@ -59,19 +63,16 @@ func Validate(v interface{}) error {
 				val = s[1]
 			}
 
-			switch value.Field(i).Kind() {
+			switch field.Kind() {
 			case reflect.Struct:
-				validateStruct(&errs, value.Field(i), key)
+				errs = append(errs, validateStruct(field, key)...)
 			case reflect.Slice:
-				l := value.Field(i).Len()
-				for j := 0; j < l; j++ {
-					err := validateType(&errs, value.Field(i).Index(j), value.Type().Field(i).Name+"["+strconv.Itoa(j)+"]", key, val)
-					if err != nil {
-						return err
-					}
+				err := validateSlice(&errs, field, structField, key, val)
+				if err != nil {
+					return err
 				}
 			default:
-				err := validateType(&errs, value.Field(i), value.Type().Field(i).Name, key, val)
+				err := validateType(&errs, field, structField.Name, key, val)
 				if err != nil {
 					return err
 				}
@@ -93,6 +94,9 @@ func validateType(errs *ValidationErrors, value reflect.Value, name string, key 
 			return ErrInvalidValidator
 		}
 		if err := validator(value.String(), val); err != nil {
+			if errors.Is(err, str.ErrInvalidValue) {
+				return fmt.Errorf("%s: %w", name, err)
+			}
 			*errs = append(*errs, ValidationError{name, err})
 		}
 	case reflect.Int:
@@ -101,21 +105,41 @@ func validateType(errs *ValidationErrors, value reflect.Value, name string, key 
 			return ErrInvalidValidator
 		}
 		if err := validatorInt(int(value.Int()), val); err != nil {
+			if errors.Is(err, intv.ErrInvalidValue) {
+				return fmt.Errorf("%s: %w", name, err)
+			}
 			*errs = append(*errs, ValidationError{name, err})
 		}
-	default:
 	}
 
 	return nil
 }
 
-func validateStruct(errs *ValidationErrors, value reflect.Value, key string) {
+func validateStruct(value reflect.Value, key string) ValidationErrors {
+	var errs ValidationErrors
+
 	if key == "nested" && value.CanInterface() {
 		err := Validate(value.Interface())
 		target := ValidationErrors{}
 
 		if errors.As(err, &target) {
-			*errs = append(*errs, target...)
+			errs = append(errs, target...)
 		}
 	}
+
+	return errs
+}
+
+func validateSlice(
+	errs *ValidationErrors, field reflect.Value, structField reflect.StructField, key string, val string,
+) error {
+	l := field.Len()
+	for j := 0; j < l; j++ {
+		err := validateType(errs, field.Index(j), structField.Name+"["+strconv.Itoa(j)+"]", key, val)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
