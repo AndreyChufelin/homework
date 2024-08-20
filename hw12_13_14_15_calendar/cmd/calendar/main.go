@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/app"
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
 var configFile string
@@ -28,8 +29,21 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config, err := LoadConfig(configFile)
+	if err != nil {
+		log.Fatalf("failed to read config from %q: %v", configFile, err)
+	}
+
+	logFile, err := os.OpenFile("./logs/calendar.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open file: %v", err)
+	}
+	defer logFile.Close()
+
+	logg, err := logger.New(logFile, config.Logger.Level)
+	if err != nil {
+		log.Fatalf("failed to create logger: %v", err) //nolint:gocritic
+	}
 
 	storage := memorystorage.New()
 	calendar := app.New(logg, storage)
