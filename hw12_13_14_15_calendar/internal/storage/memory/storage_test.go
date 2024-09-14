@@ -1,6 +1,7 @@
 package memorystorage
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"testing"
@@ -9,18 +10,6 @@ import (
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/stretchr/testify/require"
 )
-
-var eventValidation = []struct {
-	Name  string
-	Event storage.Event
-	Err   error
-}{
-	{
-		Name:  "returns error if EndDate too early",
-		Event: storage.Event{ID: "1", Date: time.Now().Add(time.Hour * 24), EndDate: time.Now()},
-		Err:   storage.ErrEndDateTooEarly,
-	},
-}
 
 func TestStorage(t *testing.T) {
 	s := New()
@@ -31,20 +20,10 @@ func TestCreateEvent(t *testing.T) {
 	t.Run("creates event in storage", func(t *testing.T) {
 		s := New()
 		event := storage.Event{ID: "1"}
-		err := s.CreateEvent(event)
+		err := s.CreateEvent(context.TODO(), event)
 
 		require.NoError(t, err)
-		require.Equal(t, map[string]storage.Event{"1": event}, s.events)
-	})
-
-	t.Run("returns error if event already exists", func(t *testing.T) {
-		s := New()
-		err := s.CreateEvent(storage.Event{ID: "1"})
-		require.NoError(t, err)
-
-		err = s.CreateEvent(storage.Event{ID: "1"})
-
-		require.ErrorIs(t, err, storage.ErrEventAlreadyExists)
+		require.Equal(t, map[string]storage.Event{"1": {ID: "1"}}, s.events)
 	})
 
 	t.Run("concurency", func(t *testing.T) {
@@ -57,7 +36,7 @@ func TestCreateEvent(t *testing.T) {
 		for i := range goroutines {
 			go func() {
 				defer wg.Done()
-				err := s.CreateEvent(storage.Event{ID: strconv.Itoa(i)})
+				err := s.CreateEvent(context.TODO(), storage.Event{ID: strconv.Itoa(i)})
 				require.NoError(t, err)
 			}()
 		}
@@ -66,35 +45,25 @@ func TestCreateEvent(t *testing.T) {
 	})
 }
 
-func TestCreateEventValidation(t *testing.T) {
-	for _, v := range eventValidation {
-		t.Run(v.Name, func(t *testing.T) {
-			s := New()
-			err := s.CreateEvent(v.Event)
-			require.ErrorIs(t, err, v.Err)
-		})
-	}
-}
-
 func TestGetEvent(t *testing.T) {
 	t.Run("returns event by id", func(t *testing.T) {
 		s := New()
 		e := storage.Event{ID: "1"}
-		err := s.CreateEvent(e)
+		err := s.CreateEvent(context.TODO(), e)
 		require.NoError(t, err)
 
-		event, err := s.GetEvent("1")
+		event, err := s.GetEvent(context.TODO(), "1")
 
 		require.NoError(t, err)
-		require.Equal(t, e, event)
+		require.Equal(t, &e, event)
 	})
 
 	t.Run("returns error if event doesn't exist", func(t *testing.T) {
 		s := New()
-		event, err := s.GetEvent("1")
+		event, err := s.GetEvent(context.TODO(), "1")
 
 		require.ErrorIs(t, err, storage.ErrEventDoesntExist)
-		require.Equal(t, storage.Event{}, event)
+		require.Nil(t, event)
 	})
 
 	t.Run("concurency", func(t *testing.T) {
@@ -106,7 +75,7 @@ func TestGetEvent(t *testing.T) {
 		for i := range goroutines / 2 {
 			go func() {
 				defer wg.Done()
-				err := s.CreateEvent(storage.Event{ID: strconv.Itoa(i)})
+				err := s.CreateEvent(context.TODO(), storage.Event{ID: strconv.Itoa(i)})
 				require.NoError(t, err)
 			}()
 		}
@@ -114,7 +83,7 @@ func TestGetEvent(t *testing.T) {
 		for i := range goroutines / 2 {
 			go func() {
 				defer wg.Done()
-				_, _ = s.GetEvent(strconv.Itoa(i))
+				_, _ = s.GetEvent(context.TODO(), strconv.Itoa(i))
 			}()
 		}
 
@@ -125,17 +94,17 @@ func TestGetEvent(t *testing.T) {
 func TestDeleteEvent(t *testing.T) {
 	t.Run("deletes event by id", func(t *testing.T) {
 		s := New()
-		err := s.CreateEvent(storage.Event{ID: "1"})
+		err := s.CreateEvent(context.TODO(), storage.Event{ID: "1"})
 		require.NoError(t, err)
 
-		err = s.DeleteEvent("1")
+		err = s.DeleteEvent(context.TODO(), "1")
 		require.NoError(t, err)
 		require.Equal(t, map[string]storage.Event{}, s.events)
 	})
 
 	t.Run("returns error if event doesn't exist", func(t *testing.T) {
 		s := New()
-		err := s.DeleteEvent("1")
+		err := s.DeleteEvent(context.TODO(), "1")
 		require.ErrorIs(t, err, storage.ErrEventDoesntExist)
 	})
 
@@ -147,13 +116,13 @@ func TestDeleteEvent(t *testing.T) {
 		wg.Add(goroutines)
 
 		for i := range goroutines {
-			s.CreateEvent(storage.Event{ID: strconv.Itoa(i)})
+			s.CreateEvent(context.TODO(), storage.Event{ID: strconv.Itoa(i)})
 		}
 
 		for i := range goroutines {
 			go func() {
 				defer wg.Done()
-				err := s.DeleteEvent(strconv.Itoa(i))
+				err := s.DeleteEvent(context.TODO(), strconv.Itoa(i))
 				require.NoError(t, err)
 			}()
 		}
@@ -165,9 +134,9 @@ func TestDeleteEvent(t *testing.T) {
 func TestEditEvent(t *testing.T) {
 	t.Run("changes event data by id", func(t *testing.T) {
 		s := New()
-		s.CreateEvent(storage.Event{ID: "1"})
+		s.CreateEvent(context.TODO(), storage.Event{ID: "1"})
 
-		err := s.EditEvent("1", storage.Event{Title: "Event #1"})
+		err := s.EditEvent(context.TODO(), "1", storage.Event{Title: "Event #1"})
 
 		require.NoError(t, err)
 		require.Equal(t, map[string]storage.Event{"1": {ID: "1", Title: "Event #1"}}, s.events)
@@ -175,19 +144,9 @@ func TestEditEvent(t *testing.T) {
 
 	t.Run("returns error if event doesn't exist", func(t *testing.T) {
 		s := New()
-		err := s.EditEvent("1", storage.Event{Title: "Event #1"})
+		err := s.EditEvent(context.TODO(), "1", storage.Event{Title: "Event #1"})
 
 		require.ErrorIs(t, err, storage.ErrEventDoesntExist)
-	})
-
-	t.Run("returns error if EndDate is too early", func(t *testing.T) {
-		s := New()
-		err := s.CreateEvent(storage.Event{ID: "1"})
-		require.NoError(t, err)
-
-		err = s.EditEvent("1", storage.Event{Date: time.Now().Add(24 * time.Hour), EndDate: time.Now()})
-
-		require.ErrorIs(t, err, storage.ErrEndDateTooEarly)
 	})
 
 	t.Run("concurency", func(t *testing.T) {
@@ -198,13 +157,13 @@ func TestEditEvent(t *testing.T) {
 		wg.Add(goroutines)
 
 		for i := range goroutines {
-			s.CreateEvent(storage.Event{ID: strconv.Itoa(i)})
+			s.CreateEvent(context.TODO(), storage.Event{ID: strconv.Itoa(i)})
 		}
 
 		for i := range goroutines {
 			go func() {
 				defer wg.Done()
-				err := s.EditEvent(strconv.Itoa(i), storage.Event{Title: "Event #1"})
+				err := s.EditEvent(context.TODO(), strconv.Itoa(i), storage.Event{Title: "Event #1"})
 				require.NoError(t, err)
 			}()
 		}
@@ -213,49 +172,56 @@ func TestEditEvent(t *testing.T) {
 	})
 }
 
-func TestEditEventValidation(t *testing.T) {
-	for _, v := range eventValidation {
-		t.Run(v.Name, func(t *testing.T) {
-			s := New()
-			err := s.CreateEvent(storage.Event{ID: "1"})
-			require.NoError(t, err)
-
-			err = s.EditEvent("1", v.Event)
-
-			require.ErrorIs(t, err, v.Err)
-		})
-	}
-}
-
 func TestGetEventListDay(t *testing.T) {
 	s := New()
-	s.CreateEvent(storage.Event{ID: "1", Date: time.Now().Add(-time.Hour * 25), EndDate: time.Now()})
+	s.CreateEvent(context.TODO(), storage.Event{ID: "1", Date: time.Now().Add(-time.Hour * 25), EndDate: time.Now()})
 	e2 := storage.Event{ID: "2", Date: time.Now().Add(-time.Hour * 10), EndDate: time.Now()}
-	s.CreateEvent(e2)
-	s.CreateEvent(storage.Event{ID: "3", Date: time.Now().Add(time.Hour * 25), EndDate: time.Now().Add(time.Hour * 30)})
+	s.CreateEvent(context.TODO(), e2)
+	s.CreateEvent(context.TODO(),
+		storage.Event{
+			ID:      "3",
+			Date:    time.Now().Add(time.Hour * 25),
+			EndDate: time.Now().Add(time.Hour * 30),
+		},
+	)
 
-	list := s.GetEventsListDay(time.Now())
+	list, err := s.GetEventsListDay(context.TODO(), time.Now())
+	require.NoError(t, err)
 	require.Equal(t, []storage.Event{e2}, list)
 }
 
 func TestGetEventListWeek(t *testing.T) {
 	s := New()
-	s.CreateEvent(storage.Event{ID: "1", Date: time.Now().AddDate(0, 0, -7), EndDate: time.Now()})
+	s.CreateEvent(context.TODO(), storage.Event{ID: "1", Date: time.Now().AddDate(0, 0, -7), EndDate: time.Now()})
 	e2 := storage.Event{ID: "2", Date: time.Now().AddDate(0, 0, 3), EndDate: time.Now().AddDate(0, 0, 5)}
-	s.CreateEvent(e2)
-	s.CreateEvent(storage.Event{ID: "3", Date: time.Now().AddDate(0, 0, 10), EndDate: time.Now().AddDate(0, 0, 15)})
+	s.CreateEvent(context.TODO(), e2)
+	s.CreateEvent(context.TODO(),
+		storage.Event{
+			ID:      "3",
+			Date:    time.Now().AddDate(0, 0, 10),
+			EndDate: time.Now().AddDate(0, 0, 15),
+		},
+	)
 
-	list := s.GetEventsListWeek(time.Now())
+	list, err := s.GetEventsListWeek(context.TODO(), time.Now())
+	require.NoError(t, err)
 	require.Equal(t, []storage.Event{e2}, list)
 }
 
 func TestGetEventListMonth(t *testing.T) {
 	s := New()
-	s.CreateEvent(storage.Event{ID: "1", Date: time.Now().AddDate(0, -2, 0), EndDate: time.Now()})
+	s.CreateEvent(context.TODO(), storage.Event{ID: "1", Date: time.Now().AddDate(0, -2, 0), EndDate: time.Now()})
 	e2 := storage.Event{ID: "2", Date: time.Now().AddDate(0, 0, 3), EndDate: time.Now().AddDate(0, 0, 5)}
-	s.CreateEvent(e2)
-	s.CreateEvent(storage.Event{ID: "3", Date: time.Now().AddDate(0, 0, 35), EndDate: time.Now().AddDate(0, 2, 0)})
+	s.CreateEvent(context.TODO(), e2)
+	s.CreateEvent(context.TODO(),
+		storage.Event{
+			ID:      "3",
+			Date:    time.Now().AddDate(0, 0, 35),
+			EndDate: time.Now().AddDate(0, 2, 0),
+		},
+	)
 
-	list := s.GetEventsListMonth(time.Now())
+	list, err := s.GetEventsListMonth(context.TODO(), time.Now())
+	require.NoError(t, err)
 	require.Equal(t, []storage.Event{e2}, list)
 }

@@ -8,17 +8,26 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// При желании конфигурацию можно вынести в internal/config.
-// Организация конфига в main принуждает нас сужать API компонентов, использовать
-// при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger LoggerConf
-	// TODO
+	Logger  LoggerConf
+	DB      DBConf
+	Storage string
+	Server  Server
 }
 
 type LoggerConf struct {
 	Level string
-	// TODO
+}
+
+type DBConf struct {
+	User     string
+	Password string
+	Name     string
+}
+
+type Server struct {
+	Host string
+	Port string
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -42,5 +51,3 @@ func LoadConfig(path string) (Config, error) {
 
 	return config, nil
 }
-
-// TODO

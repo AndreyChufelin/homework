@@ -12,7 +12,7 @@ type Event struct {
 	EndDate                   time.Time
 	Description               string
 	UserID                    string
-	advanceNotificationPeriod time.Duration
+	AdvanceNotificationPeriod time.Duration
 }
 
 var (

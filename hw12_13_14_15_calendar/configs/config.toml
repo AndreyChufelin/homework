@@ -1,5 +1,13 @@
+storage = "sql"
+
 [logger]
 level = "INFO"
 
-# TODO
-# ...
+[db]
+user = "postgres"
+password = "postgres"
+name = "postgres"
+
+[server]
+host = "localhost"
+port = "8080"

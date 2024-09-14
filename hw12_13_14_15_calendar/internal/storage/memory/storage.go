@@ -1,78 +1,78 @@
 package memorystorage
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
 	"time"
 
 	storage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
+	"github.com/google/uuid"
 )
 
 type Storage struct {
 	events map[string]storage.Event
-	mu     sync.RWMutex //nolint:unused
+	mu     sync.RWMutex
 }
 
 func New() *Storage {
 	return &Storage{events: make(map[string]storage.Event)}
 }
 
-func (s *Storage) CreateEvent(event storage.Event) error {
-	s.mu.RLock()
-	_, ok := s.events[event.ID]
-	s.mu.RUnlock()
-	if ok {
-		return fmt.Errorf("memorystorage.CreateEvent: %w", storage.ErrEventAlreadyExists)
-	}
-
-	err := validateEvent(event)
-	if err != nil {
-		return fmt.Errorf("memorystorage.CreateEvent: %w", err)
-	}
-
+func (s *Storage) CreateEvent(_ context.Context, event storage.Event) error {
 	s.mu.Lock()
-	s.events[event.ID] = event
-	s.mu.Unlock()
+	defer s.mu.Unlock()
+
+	id := event.ID
+	if id == "" {
+		id = uuid.New().String()
+	} else {
+		_, ok := s.events[id]
+		if ok {
+			return fmt.Errorf("creating event with id %s: %w", id, storage.ErrEventAlreadyExists)
+		}
+	}
+
+	s.events[id] = event
 
 	return nil
 }
 
-func (s *Storage) GetEvent(id string) (storage.Event, error) {
+func (s *Storage) GetEvent(_ context.Context, id string) (*storage.Event, error) {
 	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	event, ok := s.events[id]
-	s.mu.RUnlock()
 	if !ok {
-		return storage.Event{}, fmt.Errorf("memorystorage.GetEvent: %w", storage.ErrEventDoesntExist)
+		return nil, fmt.Errorf("getting event with id %s: %w", id, storage.ErrEventDoesntExist)
 	}
 
-	return event, nil
+	return &event, nil
 }
 
-func (s *Storage) DeleteEvent(id string) error {
-	s.mu.RLock()
+func (s *Storage) DeleteEvent(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	_, ok := s.events[id]
-	s.mu.RUnlock()
 	if !ok {
-		return fmt.Errorf("memorystorage.DeleteEvent: %w", storage.ErrEventDoesntExist)
+		return fmt.Errorf("deleting event with id: %w", storage.ErrEventDoesntExist)
 	}
 
-	s.mu.Lock()
 	delete(s.events, id)
-	s.mu.Unlock()
 
 	return nil
 }
 
-func (s *Storage) EditEvent(id string, update storage.Event) error {
-	s.mu.RLock()
-	event, ok := s.events[id]
-	s.mu.RUnlock()
-	if !ok {
-		return fmt.Errorf("memorystorage.DeleteEvent: %w", storage.ErrEventDoesntExist)
-	}
-
+func (s *Storage) EditEvent(_ context.Context, id string, update storage.Event) error {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	event, ok := s.events[id]
+	if !ok {
+		return fmt.Errorf("edit event with id %s: %w", id, storage.ErrEventDoesntExist)
+	}
 
 	origVal := reflect.ValueOf(&event).Elem()
 	updateVal := reflect.ValueOf(update)
@@ -86,56 +86,43 @@ func (s *Storage) EditEvent(id string, update storage.Event) error {
 		}
 	}
 
-	err := validateEvent(event)
-	if err != nil {
-		return fmt.Errorf("memorystorage.EditEvent: %w", err)
-	}
-
 	s.events[id] = event
-
-	s.mu.Unlock()
 
 	return nil
 }
 
-func (s *Storage) GetEventsListDay(date time.Time) []storage.Event {
-	var result []storage.Event
+func (s *Storage) GetEventsListDay(_ context.Context, date time.Time) ([]storage.Event, error) {
 	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []storage.Event
 	for _, event := range s.events {
 		if event.Date.Year() == date.Year() && event.Date.YearDay() == date.YearDay() {
 			result = append(result, event)
 		}
 	}
-	s.mu.RUnlock()
 
-	return result
+	return result, nil
 }
 
-func (s *Storage) GetEventsListWeek(date time.Time) []storage.Event {
-	return s.getEventsListTo(date, date.AddDate(0, 0, 7))
+func (s *Storage) GetEventsListWeek(_ context.Context, date time.Time) ([]storage.Event, error) {
+	return s.getEventsListTo(date, date.AddDate(0, 0, 7)), nil
 }
 
-func (s *Storage) GetEventsListMonth(date time.Time) []storage.Event {
-	return s.getEventsListTo(date, date.AddDate(0, 1, 0))
+func (s *Storage) GetEventsListMonth(_ context.Context, date time.Time) ([]storage.Event, error) {
+	return s.getEventsListTo(date, date.AddDate(0, 1, 0)), nil
 }
 
 func (s *Storage) getEventsListTo(start time.Time, end time.Time) []storage.Event {
-	var result []storage.Event
 	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []storage.Event
 	for _, event := range s.events {
 		if event.Date.After(start) && event.Date.Before(end) {
 			result = append(result, event)
 		}
 	}
-	s.mu.RUnlock()
 
 	return result
-}
-
-func validateEvent(event storage.Event) error {
-	if event.Date.After(event.EndDate) {
-		return fmt.Errorf("memorystorage.CreateEvent: %w", storage.ErrEndDateTooEarly)
-	}
-
-	return nil
 }
