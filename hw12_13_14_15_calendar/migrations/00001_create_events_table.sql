@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS events (
   id uuid DEFAULT gen_random_uuid(),
-  title VARCHAR(50) NOT NULL,
+  title TEXT NOT NULL,
   date TIMESTAMP NOT NULL,
   end_date TIMESTAMP NOT NULL,
   description VARCHAR(300),

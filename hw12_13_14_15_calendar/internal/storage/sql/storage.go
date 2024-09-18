@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
@@ -43,10 +41,17 @@ func (s *Storage) Connect(ctx context.Context) error {
 }
 
 func (s *Storage) Close() error {
+	if s.db == nil {
+		return fmt.Errorf("sqlstorage.Close: no connection to close")
+	}
+
 	err := s.db.Close()
 	if err != nil {
 		return fmt.Errorf("sqlstorage.Close: %w", err)
 	}
+
+	s.db = nil
+
 	return nil
 }
 
@@ -106,24 +111,9 @@ func (s *Storage) GetEvent(ctx context.Context, id string) (*storage.Event, erro
 }
 
 func (s *Storage) EditEvent(ctx context.Context, id string, update storage.Event) error {
-	updateVal := reflect.ValueOf(update)
-	var changed []string
-	var values []interface{}
-
-	for i := 0; i < updateVal.NumField(); i++ {
-		updateField := updateVal.Field(i)
-
-		if !updateField.IsZero() {
-			f := fmt.Sprintf("%s = $%d", updateVal.Type().Field(i).Name, i)
-			changed = append(changed, f)
-			values = append(values, updateField.Interface())
-		}
-	}
-	values = append(values, id)
-
-	query := fmt.Sprintf("UPDATE events SET %s WHERE id = $%d", strings.Join(changed, ", "), len(values))
-
-	res, err := s.db.ExecContext(ctx, query, values...)
+	res, err := s.db.NamedExecContext(ctx, `UPDATE events SET 
+		title = :title, date = :date, end_date = :enddate, description = :description,
+		user_id = :userid, advance_notification_period = :advancenotificationperiod`, &update)
 	if err != nil {
 		return fmt.Errorf("edit event with id %s: %w", id, err)
 	}

@@ -136,7 +136,7 @@ func TestEditEvent(t *testing.T) {
 		s := New()
 		s.CreateEvent(context.TODO(), storage.Event{ID: "1"})
 
-		err := s.EditEvent(context.TODO(), "1", storage.Event{Title: "Event #1"})
+		err := s.EditEvent(context.TODO(), "1", storage.Event{ID: "1", Title: "Event #1"})
 
 		require.NoError(t, err)
 		require.Equal(t, map[string]storage.Event{"1": {ID: "1", Title: "Event #1"}}, s.events)

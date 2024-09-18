@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/app"
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/helper"
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage/memory"
-	sqlstorage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage/sql"
 	_ "github.com/lib/pq"
 )
 
@@ -45,20 +44,16 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	var storage app.Storage
-	if config.Storage == "sql" {
-		sql := sqlstorage.New(config.DB.User, config.DB.Password, config.DB.Name)
-		err := sql.Connect(ctx)
-		if err != nil {
-			logg.Error("failed to run database")
-			cancel()
-		}
-		defer sql.Close()
-
-		storage = sql
-	} else {
-		storage = memorystorage.New()
+	storage, close, err := helper.InitStorage(ctx, helper.DBConfig{
+		User:     config.DB.User,
+		Password: config.DB.Password,
+		Name:     config.DB.Name,
+	}, config.Storage)
+	if err != nil {
+		logg.Error("failed to run database")
+		cancel()
 	}
+	defer close()
 
 	calendar := app.New(logg, storage)
 
