@@ -11,7 +11,7 @@ import (
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/app"
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/helper"
-	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger"
+	loggerslog "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger/slog"
 	internalhttp "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/server/http"
 	_ "github.com/lib/pq"
 )
@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("failed to read config from %q: %v", configFile, err)
 	}
 
-	logg, err := logger.New(os.Stderr, config.Logger.Level)
+	logg, err := loggerslog.New(os.Stderr, config.Logger.Level)
 	if err != nil {
 		log.Fatalf("failed to create logger: %v", err)
 	}

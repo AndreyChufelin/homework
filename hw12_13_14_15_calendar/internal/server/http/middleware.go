@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger"
 )
 
 type statusRecorder struct {
@@ -16,7 +18,7 @@ func (sr *statusRecorder) WriteHeader(code int) {
 	sr.ResponseWriter.WriteHeader(code)
 }
 
-func loggingMiddleware(logger Logger, next http.Handler) http.Handler {
+func loggingMiddleware(logger logger.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		addr := strings.Split(req.RemoteAddr, ":")
 		if len(addr) > 0 {

@@ -72,6 +72,7 @@ func (s *Storage) EditEvent(_ context.Context, id string, update storage.Event) 
 	if !ok {
 		return fmt.Errorf("edit event with id %s: %w", id, storage.ErrEventDoesntExist)
 	}
+	update.ID = id
 
 	s.events[id] = update
 
@@ -88,19 +89,32 @@ func (s *Storage) GetEventsListDay(_ context.Context, date time.Time) ([]storage
 			result = append(result, event)
 		}
 	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("memorystorage.GetEventsListDay: %w", storage.ErrNoEventsFound)
+	}
 
 	return result, nil
 }
 
 func (s *Storage) GetEventsListWeek(_ context.Context, date time.Time) ([]storage.Event, error) {
-	return s.getEventsListTo(date, date.AddDate(0, 0, 7)), nil
+	events, err := s.getEventsListTo(date, date.AddDate(0, 0, 7))
+	if err != nil {
+		return nil, fmt.Errorf("memorystorage.GetEventsListWeek: %w", err)
+	}
+
+	return events, nil
 }
 
 func (s *Storage) GetEventsListMonth(_ context.Context, date time.Time) ([]storage.Event, error) {
-	return s.getEventsListTo(date, date.AddDate(0, 1, 0)), nil
+	events, err := s.getEventsListTo(date, date.AddDate(0, 1, 0))
+	if err != nil {
+		return nil, fmt.Errorf("memorystorage.GetEventsListWeek: %w", err)
+	}
+
+	return events, nil
 }
 
-func (s *Storage) getEventsListTo(start time.Time, end time.Time) []storage.Event {
+func (s *Storage) getEventsListTo(start time.Time, end time.Time) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -110,6 +124,9 @@ func (s *Storage) getEventsListTo(start time.Time, end time.Time) []storage.Even
 			result = append(result, event)
 		}
 	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("memorystorage.GetEventsListTo: %w", storage.ErrNoEventsFound)
+	}
 
-	return result
+	return result, nil
 }

@@ -27,7 +27,6 @@ func New(user, password, name string) *Storage {
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
-	fmt.Println("Connnect...")
 	db, err := sqlx.ConnectContext(ctx, "postgres",
 		"user=postgres dbname=postgres sslmode=disable password=postgres host=localhost",
 	)
@@ -142,6 +141,9 @@ func (s *Storage) GetEventsListDay(ctx context.Context, date time.Time) ([]stora
 	var eventsSQL []eventSQL
 	err := s.db.SelectContext(ctx, &eventsSQL, "SELECT * FROM events WHERE date::date=$1", date)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("storagesql.GetEventsListDay: %w", storage.ErrNoEventsFound)
+		}
 		return nil, fmt.Errorf("event list day %s: %w", date.Format("2006-01-02"), err)
 	}
 
