@@ -29,6 +29,7 @@ func (s *Server) writeJSON(w http.ResponseWriter, status int, data wrapper) erro
 
 	return nil
 }
+
 func (s *Server) errorResponse(w http.ResponseWriter, status int, message interface{}) {
 	wr := wrapper{"error": message}
 	err := s.writeJSON(w, status, wr)

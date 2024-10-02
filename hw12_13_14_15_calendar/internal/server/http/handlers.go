@@ -1,7 +1,6 @@
 package internalhttp
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,7 +31,7 @@ func (s *Server) createEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.app.CreateEvent(context.TODO(), event)
+	err = s.app.CreateEvent(r.Context(), event)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventAlreadyExists) {
 			logg.Warn("event already exist")
@@ -40,7 +39,7 @@ func (s *Server) createEventHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed create event", "error", err)
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -56,7 +55,7 @@ func (s *Server) getEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[2]
-	event, err := s.app.GetEvent(context.TODO(), id)
+	event, err := s.app.GetEvent(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventDoesntExist) {
 			logg.Warn("event not found")
@@ -64,7 +63,7 @@ func (s *Server) getEventHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed get event", "error", err)
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -80,7 +79,7 @@ func (s *Server) deleteEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := parts[3]
-	err := s.app.DeleteEvent(context.TODO(), id)
+	err := s.app.DeleteEvent(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventDoesntExist) {
 			logg.Warn("Delete event not found")
@@ -88,7 +87,7 @@ func (s *Server) deleteEventHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("Failed delete event", "error", err)
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -121,7 +120,7 @@ func (s *Server) editEventHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.app.EditEvent(context.TODO(), id, event)
+	err = s.app.EditEvent(r.Context(), id, event)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventDoesntExist) {
 			logg.Warn("event not found")
@@ -129,7 +128,7 @@ func (s *Server) editEventHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed edit event", "error", err)
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -158,7 +157,7 @@ func (s *Server) getEventsDayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.app.GetEventsListDay(context.TODO(), date)
+	events, err := s.app.GetEventsListDay(r.Context(), date)
 	if err != nil {
 		if errors.Is(err, storage.ErrNoEventsFound) {
 			logg.Warn("no events found for day %s", date.Format("2006-01-02"))
@@ -166,7 +165,7 @@ func (s *Server) getEventsDayHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed get day events")
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -182,7 +181,7 @@ func (s *Server) getEventsWeekHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.app.GetEventsListWeek(context.TODO(), date)
+	events, err := s.app.GetEventsListWeek(r.Context(), date)
 	if err != nil {
 		if errors.Is(err, storage.ErrNoEventsFound) {
 			logg.Warn("no events found for day %s", date.Format("2006-01-02"))
@@ -190,7 +189,7 @@ func (s *Server) getEventsWeekHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed get day events")
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 
@@ -206,7 +205,7 @@ func (s *Server) getEventsMonthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.app.GetEventsListMonth(context.TODO(), date)
+	events, err := s.app.GetEventsListMonth(r.Context(), date)
 	if err != nil {
 		if errors.Is(err, storage.ErrNoEventsFound) {
 			logg.Warn("no events found for day %s", date.Format("2006-01-02"))
@@ -214,7 +213,7 @@ func (s *Server) getEventsMonthHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		logg.Error("failed get day events")
-		s.errorResponse(w, http.StatusInternalServerError, "Unkown error")
+		s.errorResponse(w, http.StatusInternalServerError, "Unknown error")
 		return
 	}
 

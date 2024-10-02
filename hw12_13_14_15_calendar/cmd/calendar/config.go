@@ -13,6 +13,7 @@ type Config struct {
 	DB      DBConf
 	Storage string
 	Server  Server
+	GRPC    GRPC
 }
 
 type LoggerConf struct {
@@ -26,6 +27,11 @@ type DBConf struct {
 }
 
 type Server struct {
+	Host string
+	Port string
+}
+
+type GRPC struct {
 	Host string
 	Port string
 }

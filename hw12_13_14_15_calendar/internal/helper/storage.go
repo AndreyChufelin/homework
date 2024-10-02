@@ -26,12 +26,13 @@ type DBConfig struct {
 	Name     string
 }
 
-type close = func() error
+type closeStorage = func() error
 
 func cl() error {
 	return nil
 }
-func InitStorage(ctx context.Context, dbConfig DBConfig, storageType string) (Storage, close, error) {
+
+func InitStorage(ctx context.Context, dbConfig DBConfig, storageType string) (Storage, closeStorage, error) {
 	var storage Storage
 	c := cl
 	if storageType == "sql" {

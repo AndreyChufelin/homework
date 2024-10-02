@@ -110,9 +110,20 @@ func (s *Storage) GetEvent(ctx context.Context, id string) (*storage.Event, erro
 }
 
 func (s *Storage) EditEvent(ctx context.Context, id string, update storage.Event) error {
+	params := map[string]interface{}{
+		"query_id":                  id,
+		"id":                        update.ID,
+		"title":                     update.Title,
+		"date":                      update.Date,
+		"enddate":                   update.EndDate,
+		"description":               update.Description,
+		"userid":                    update.UserID,
+		"advancenotificationperiod": update.AdvanceNotificationPeriod,
+	}
 	res, err := s.db.NamedExecContext(ctx, `UPDATE events SET 
 		title = :title, date = :date, end_date = :enddate, description = :description,
-		user_id = :userid, advance_notification_period = :advancenotificationperiod`, &update)
+		user_id = :userid, advance_notification_period = :advancenotificationperiod
+		WHERE id = :query_id`, params)
 	if err != nil {
 		return fmt.Errorf("edit event with id %s: %w", id, err)
 	}
