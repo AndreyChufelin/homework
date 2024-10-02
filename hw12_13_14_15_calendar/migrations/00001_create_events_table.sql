@@ -2,10 +2,10 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS events (
   id uuid DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
+  title VARCHAR(30) NOT NULL,
   date TIMESTAMP NOT NULL,
   end_date TIMESTAMP NOT NULL,
-  description VARCHAR(300),
+  description TEXT,
   user_id uuid NOT NULL,
   advance_notification_period INTERVAL
 );

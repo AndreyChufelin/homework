@@ -26,11 +26,13 @@ var (
 )
 
 func ValidateEvent(validator validator.Validator, event Event) {
-	_, err := uuid.Parse(event.ID)
-	isIDValid := err != nil
-	validator.Check(isIDValid, "id", "not valid uuid")
+	if event.ID != "" {
+		_, err := uuid.Parse(event.ID)
+		isIDValid := err != nil
+		validator.Check(isIDValid, "id", "not valid uuid")
+	}
 
-	_, err = uuid.Parse(event.UserID)
+	_, err := uuid.Parse(event.UserID)
 	isUserIDValid := err != nil
 	validator.Check(isUserIDValid, "user_id", "not valid uuid")
 

@@ -15,6 +15,7 @@ func (v Validator) Valid() bool {
 func (v Validator) AddError(title, msg string) {
 	v.Errors[title] = msg
 }
+
 func (v Validator) Check(condition bool, title, msg string) {
 	if !condition {
 		return

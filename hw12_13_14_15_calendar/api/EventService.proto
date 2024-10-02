@@ -1,7 +1,84 @@
 syntax = "proto3";
 
+option go_package = "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/api";
+
 package event;
 
+service Calendar {
+  rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse) {}
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse) {}
+  rpc EditEvent(EditEventRequest) returns (EditEventResponse) {}
+  rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse) {}
+  rpc GetEventsDay(GetEventsDayRequest) returns (GetEventsDayResponse) {}
+  rpc GetEventsWeek(GetEventsWeekRequest) returns (GetEventsWeekResponse) {}
+  rpc GetEventsMonth(GetEventsMonthRequest) returns (GetEventsMonthResponse) {}
+}
+
 message Event {
-    // TODO
+    string id = 1;
+    string title = 2;
+    int64 date = 3;
+    int64 end_date = 4;
+    string description = 5;
+    string user_id = 6;
+    int64 advance_notification_period = 7;
+}
+
+message CreateEventRequest {
+  Event event = 1;
+}
+
+message CreateEventResponse {}
+
+message GetEventRequest {
+  string id = 1;
+}
+
+message GetEventResponse {
+  Event event = 1;
+}
+
+message EditEventRequest {
+  Event event = 1;
+  string id = 2;
+}
+
+message EditEventResponse {}
+
+message DeleteEventRequest {
+  string id = 1;
+}
+
+message DeleteEventResponse {}
+
+message GetEventsDayRequest {
+  int64 date = 1;
+}
+
+message GetEventsDayResponse {
+  repeated Event events = 1;
+}
+
+message GetEventsWeekRequest {
+  int64 date = 1;
+}
+
+message GetEventsWeekResponse {
+  repeated Event events = 1;
+}
+
+message GetEventsMonthRequest {
+  int64 date = 1;
+}
+
+message GetEventsMonthResponse {
+  repeated Event events = 1;
+}
+
+message BadRequest {
+  message FieldValiation {
+    string field = 1;
+    string description = 2;
+  }
+  repeated FieldValiation errors = 1;
 }

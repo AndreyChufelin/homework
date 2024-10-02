@@ -17,6 +17,7 @@ import (
 )
 
 func newLogger(t *testing.T) *logger.Logger {
+	t.Helper()
 	logg, err := logger.New(io.Discard, "INFO")
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +62,7 @@ func TestGetEventHandler(t *testing.T) {
 			returns: []interface{}{nil, errors.New("internal error")},
 			status:  http.StatusInternalServerError,
 			want: `{
-	"error": "Unkown error"
+	"error": "Unknown error"
 }`,
 		},
 	}
@@ -131,7 +132,7 @@ func TestCreateEventHandler(t *testing.T) {
 			returns: []interface{}{errors.New("internal error")},
 			status:  http.StatusInternalServerError,
 			want: `{
-	"error": "Unkown error"
+	"error": "Unknown error"
 }`,
 		},
 	}
@@ -209,7 +210,7 @@ func TestDeleteEventHandler(t *testing.T) {
 			returns: []interface{}{errors.New("internal error")},
 			status:  http.StatusInternalServerError,
 			want: `{
-	"error": "Unkown error"
+	"error": "Unknown error"
 }`,
 		},
 	}
@@ -279,7 +280,7 @@ func TestEditEventHandler(t *testing.T) {
 			returns: []interface{}{errors.New("internal error")},
 			status:  http.StatusInternalServerError,
 			want: `{
-	"error": "Unkown error"
+	"error": "Unknown error"
 }`,
 		},
 	}
@@ -366,12 +367,13 @@ var testsEventList = []struct {
 		returns: []interface{}{nil, errors.New("internal error")},
 		status:  http.StatusInternalServerError,
 		want: `{
-	"error": "Unkown error"
+	"error": "Unknown error"
 }`,
 	},
 }
 
 func getDate(t *testing.T) time.Time {
+	t.Helper()
 	date, err := time.Parse("2006-01-02", "2024-09-23")
 	if err != nil {
 		t.Fatal(err)
