@@ -1,3 +1,5 @@
+//go:generate protoc --proto_path=../../api --go_out=../../api --go_opt=paths=source_relative --go-grpc_out=../../api --go-grpc_opt=paths=source_relative ../../api/EventService.proto
+
 package main
 
 import (
@@ -10,10 +12,10 @@ import (
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/app"
-	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger"
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/helper"
+	loggerslog "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/logger/slog"
+	internalgrpc "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage/memory"
-	sqlstorage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage/sql"
 	_ "github.com/lib/pq"
 )
 
@@ -36,7 +38,7 @@ func main() {
 		log.Fatalf("failed to read config from %q: %v", configFile, err)
 	}
 
-	logg, err := logger.New(os.Stderr, config.Logger.Level)
+	logg, err := loggerslog.New(os.Stderr, config.Logger.Level)
 	if err != nil {
 		log.Fatalf("failed to create logger: %v", err)
 	}
@@ -45,24 +47,21 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	var storage app.Storage
-	if config.Storage == "sql" {
-		sql := sqlstorage.New(config.DB.User, config.DB.Password, config.DB.Name)
-		err := sql.Connect(ctx)
-		if err != nil {
-			logg.Error("failed to run database")
-			cancel()
-		}
-		defer sql.Close()
-
-		storage = sql
-	} else {
-		storage = memorystorage.New()
+	storage, closeStorage, err := helper.InitStorage(ctx, helper.DBConfig{
+		User:     config.DB.User,
+		Password: config.DB.Password,
+		Name:     config.DB.Name,
+	}, config.Storage)
+	if err != nil {
+		logg.Error("failed to run database")
+		cancel()
 	}
+	defer closeStorage()
 
 	calendar := app.New(logg, storage)
 
 	server := internalhttp.NewServer(logg, calendar, config.Server.Host, config.Server.Port)
+	grpc := internalgrpc.NewServer(logg, calendar, config.GRPC.Host, config.GRPC.Port)
 
 	go func() {
 		<-ctx.Done()
@@ -73,9 +72,18 @@ func main() {
 		if err := server.Stop(ctx); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
 		}
+		grpc.Stop()
 	}()
 
 	logg.Info("calendar is running...")
+
+	go func() {
+		if err := grpc.Start(); err != nil {
+			logg.Error("failed to start grpc server: " + err.Error())
+			cancel()
+			os.Exit(1)
+		}
+	}()
 
 	if err := server.Start(); err != nil {
 		logg.Error("failed to start http server: " + err.Error())

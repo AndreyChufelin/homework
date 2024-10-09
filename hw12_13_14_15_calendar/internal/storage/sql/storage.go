@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
@@ -29,7 +27,6 @@ func New(user, password, name string) *Storage {
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
-	fmt.Println("Connnect...")
 	db, err := sqlx.ConnectContext(ctx, "postgres",
 		"user=postgres dbname=postgres sslmode=disable password=postgres host=localhost",
 	)
@@ -43,10 +40,17 @@ func (s *Storage) Connect(ctx context.Context) error {
 }
 
 func (s *Storage) Close() error {
+	if s.db == nil {
+		return fmt.Errorf("sqlstorage.Close: no connection to close")
+	}
+
 	err := s.db.Close()
 	if err != nil {
 		return fmt.Errorf("sqlstorage.Close: %w", err)
 	}
+
+	s.db = nil
+
 	return nil
 }
 
@@ -106,24 +110,20 @@ func (s *Storage) GetEvent(ctx context.Context, id string) (*storage.Event, erro
 }
 
 func (s *Storage) EditEvent(ctx context.Context, id string, update storage.Event) error {
-	updateVal := reflect.ValueOf(update)
-	var changed []string
-	var values []interface{}
-
-	for i := 0; i < updateVal.NumField(); i++ {
-		updateField := updateVal.Field(i)
-
-		if !updateField.IsZero() {
-			f := fmt.Sprintf("%s = $%d", updateVal.Type().Field(i).Name, i)
-			changed = append(changed, f)
-			values = append(values, updateField.Interface())
-		}
+	params := map[string]interface{}{
+		"query_id":                  id,
+		"id":                        update.ID,
+		"title":                     update.Title,
+		"date":                      update.Date,
+		"enddate":                   update.EndDate,
+		"description":               update.Description,
+		"userid":                    update.UserID,
+		"advancenotificationperiod": update.AdvanceNotificationPeriod,
 	}
-	values = append(values, id)
-
-	query := fmt.Sprintf("UPDATE events SET %s WHERE id = $%d", strings.Join(changed, ", "), len(values))
-
-	res, err := s.db.ExecContext(ctx, query, values...)
+	res, err := s.db.NamedExecContext(ctx, `UPDATE events SET 
+		title = :title, date = :date, end_date = :enddate, description = :description,
+		user_id = :userid, advance_notification_period = :advancenotificationperiod
+		WHERE id = :query_id`, params)
 	if err != nil {
 		return fmt.Errorf("edit event with id %s: %w", id, err)
 	}
@@ -152,6 +152,9 @@ func (s *Storage) GetEventsListDay(ctx context.Context, date time.Time) ([]stora
 	var eventsSQL []eventSQL
 	err := s.db.SelectContext(ctx, &eventsSQL, "SELECT * FROM events WHERE date::date=$1", date)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("storagesql.GetEventsListDay: %w", storage.ErrNoEventsFound)
+		}
 		return nil, fmt.Errorf("event list day %s: %w", date.Format("2006-01-02"), err)
 	}
 

@@ -3,11 +3,10 @@ package memorystorage
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
-	storage "github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
+	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -24,17 +23,16 @@ func (s *Storage) CreateEvent(_ context.Context, event storage.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id := event.ID
-	if id == "" {
-		id = uuid.New().String()
+	if event.ID == "" {
+		event.ID = uuid.New().String()
 	} else {
-		_, ok := s.events[id]
+		_, ok := s.events[event.ID]
 		if ok {
-			return fmt.Errorf("creating event with id %s: %w", id, storage.ErrEventAlreadyExists)
+			return fmt.Errorf("creating event with id %s: %w", event.ID, storage.ErrEventAlreadyExists)
 		}
 	}
 
-	s.events[id] = event
+	s.events[event.ID] = event
 
 	return nil
 }
@@ -69,24 +67,13 @@ func (s *Storage) EditEvent(_ context.Context, id string, update storage.Event) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	event, ok := s.events[id]
+	_, ok := s.events[id]
 	if !ok {
 		return fmt.Errorf("edit event with id %s: %w", id, storage.ErrEventDoesntExist)
 	}
+	update.ID = id
 
-	origVal := reflect.ValueOf(&event).Elem()
-	updateVal := reflect.ValueOf(update)
-
-	for i := 0; i < updateVal.NumField(); i++ {
-		origField := origVal.Field(i)
-		updateField := updateVal.Field(i)
-
-		if !updateField.IsZero() {
-			origField.Set(updateField)
-		}
-	}
-
-	s.events[id] = event
+	s.events[id] = update
 
 	return nil
 }
@@ -101,19 +88,32 @@ func (s *Storage) GetEventsListDay(_ context.Context, date time.Time) ([]storage
 			result = append(result, event)
 		}
 	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("memorystorage.GetEventsListDay: %w", storage.ErrNoEventsFound)
+	}
 
 	return result, nil
 }
 
 func (s *Storage) GetEventsListWeek(_ context.Context, date time.Time) ([]storage.Event, error) {
-	return s.getEventsListTo(date, date.AddDate(0, 0, 7)), nil
+	events, err := s.getEventsListTo(date, date.AddDate(0, 0, 7))
+	if err != nil {
+		return nil, fmt.Errorf("memorystorage.GetEventsListWeek: %w", err)
+	}
+
+	return events, nil
 }
 
 func (s *Storage) GetEventsListMonth(_ context.Context, date time.Time) ([]storage.Event, error) {
-	return s.getEventsListTo(date, date.AddDate(0, 1, 0)), nil
+	events, err := s.getEventsListTo(date, date.AddDate(0, 1, 0))
+	if err != nil {
+		return nil, fmt.Errorf("memorystorage.GetEventsListWeek: %w", err)
+	}
+
+	return events, nil
 }
 
-func (s *Storage) getEventsListTo(start time.Time, end time.Time) []storage.Event {
+func (s *Storage) getEventsListTo(start time.Time, end time.Time) ([]storage.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -123,6 +123,9 @@ func (s *Storage) getEventsListTo(start time.Time, end time.Time) []storage.Even
 			result = append(result, event)
 		}
 	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("memorystorage.GetEventsListTo: %w", storage.ErrNoEventsFound)
+	}
 
-	return result
+	return result, nil
 }
