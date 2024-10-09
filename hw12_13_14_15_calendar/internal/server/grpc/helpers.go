@@ -37,7 +37,7 @@ func protoToEvent(event *pb.Event) storage.Event {
 		Date:                      time.Unix(event.Date, 0).UTC(),
 		EndDate:                   time.Unix(event.EndDate, 0).UTC(),
 		UserID:                    event.UserId,
-		AdvanceNotificationPeriod: time.Duration(event.AdvanceNotificationPeriod) * time.Second,
+		AdvanceNotificationPeriod: time.Duration(event.AdvanceNotificationPeriod),
 	}
 }
 
@@ -77,7 +77,7 @@ func getEventsDate(
 			return nil, status.Error(codes.NotFound, "no events found")
 		}
 		logger.Error("failed get day events", "error", err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
 	resopnse := make([]*pb.Event, len(events))
