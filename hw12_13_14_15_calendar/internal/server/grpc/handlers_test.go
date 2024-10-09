@@ -102,7 +102,7 @@ func TestCreateEvent(t *testing.T) {
 			},
 			event:     &eventMessage,
 			wantEvent: eventStorage,
-			err:       status.Error(codes.Internal, "internal error"),
+			err:       status.Error(codes.Internal, "Internal server error"),
 		},
 	}
 	for _, tt := range tests {
@@ -171,7 +171,7 @@ func TestGetEvent(t *testing.T) {
 				nil,
 				errors.New("internal error"),
 			},
-			err: status.Error(codes.Internal, "internal error"),
+			err: status.Error(codes.Internal, "Internal server error"),
 		},
 	}
 	for _, tt := range tests {
@@ -226,7 +226,7 @@ func TestEditEvent(t *testing.T) {
 			},
 			event:     &eventMessage,
 			wantEvent: eventStorage,
-			err:       status.Error(codes.Internal, "internal error"),
+			err:       status.Error(codes.Internal, "Internal server error"),
 		},
 	}
 	for _, tt := range tests {
@@ -296,7 +296,7 @@ func TestDeleteEvent(t *testing.T) {
 			},
 			event:     &eventMessage,
 			wantEvent: eventStorage,
-			err:       status.Error(codes.Internal, "internal error"),
+			err:       status.Error(codes.Internal, "Internal server error"),
 		},
 	}
 	for _, tt := range tests {
@@ -347,7 +347,7 @@ var testsDate = []struct {
 			nil,
 			errors.New("internal error"),
 		},
-		err: status.Error(codes.Internal, "internal error"),
+		err: status.Error(codes.Internal, "Internal server error"),
 	},
 }
 

@@ -5,16 +5,6 @@ import (
 	"net/http"
 )
 
-func methodHandler(expectedMethod string, handlerFunc http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != expectedMethod {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		handlerFunc(w, r)
-	}
-}
-
 type wrapper map[string]interface{}
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, data wrapper) error {

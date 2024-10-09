@@ -18,12 +18,17 @@ type Storage interface {
 	GetEventsListDay(ctx context.Context, date time.Time) ([]storage.Event, error)
 	GetEventsListWeek(ctx context.Context, date time.Time) ([]storage.Event, error)
 	GetEventsListMonth(ctx context.Context, date time.Time) ([]storage.Event, error)
+	GetEventsToNotify(ctx context.Context) ([]storage.Event, error)
+	MarkNotified(ctx context.Context, ids []string) error
+	ClearEvents(ctx context.Context, duration time.Duration) error
 }
 
 type DBConfig struct {
 	User     string
 	Password string
 	Name     string
+	Host     string
+	Port     string
 }
 
 type closeStorage = func() error
@@ -36,7 +41,7 @@ func InitStorage(ctx context.Context, dbConfig DBConfig, storageType string) (St
 	var storage Storage
 	c := cl
 	if storageType == "sql" {
-		sql := sqlstorage.New(dbConfig.User, dbConfig.Password, dbConfig.Name)
+		sql := sqlstorage.New(dbConfig.User, dbConfig.Password, dbConfig.Name, dbConfig.Host, dbConfig.Port)
 		c = sql.Close
 		err := sql.Connect(ctx)
 		if err != nil {

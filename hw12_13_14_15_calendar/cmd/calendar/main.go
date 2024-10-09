@@ -51,9 +51,11 @@ func main() {
 		User:     config.DB.User,
 		Password: config.DB.Password,
 		Name:     config.DB.Name,
+		Host:     config.DB.Host,
+		Port:     config.DB.Port,
 	}, config.Storage)
 	if err != nil {
-		logg.Error("failed to run database")
+		logg.Error("failed to run database", err)
 		cancel()
 	}
 	defer closeStorage()

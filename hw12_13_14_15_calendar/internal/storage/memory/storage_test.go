@@ -225,3 +225,75 @@ func TestGetEventListMonth(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []storage.Event{e2}, list)
 }
+
+func TestGetEventsToNotify(t *testing.T) {
+	s := New()
+	currentTime := time.Now()
+	s.events["1"] = storage.Event{
+		ID:                        "1",
+		Date:                      currentTime,
+		EndDate:                   currentTime,
+		AdvanceNotificationPeriod: 3600,
+		Notified:                  false,
+	}
+	s.events["2"] = storage.Event{
+		ID:                        "2",
+		Date:                      currentTime.Add(48 * time.Hour),
+		EndDate:                   currentTime.Add(48 * time.Hour),
+		AdvanceNotificationPeriod: 3600,
+		Notified:                  false,
+	}
+	s.events["3"] = storage.Event{
+		ID:                        "3",
+		Date:                      currentTime,
+		EndDate:                   currentTime,
+		AdvanceNotificationPeriod: 3600,
+		Notified:                  true,
+	}
+
+	events, err := s.GetEventsToNotify(context.TODO())
+
+	require.NoError(t, err)
+
+	require.Len(t, events, 1)
+	require.Equal(t, events[0], s.events["1"])
+}
+
+func TestMarkNotified(t *testing.T) {
+	s := New()
+	s.events["1"] = storage.Event{ID: "1", Notified: false}
+	s.events["2"] = storage.Event{ID: "2", Notified: false}
+	s.events["3"] = storage.Event{ID: "3", Notified: false}
+
+	err := s.MarkNotified(context.TODO(), []string{"1", "3"})
+
+	require.NoError(t, err)
+	require.Equal(t, s.events["1"].Notified, true)
+	require.Equal(t, s.events["2"].Notified, false)
+	require.Equal(t, s.events["3"].Notified, true)
+}
+
+func TestClearEvents(t *testing.T) {
+	s := New()
+	currentTime := time.Now()
+	s.events["1"] = storage.Event{
+		ID:      "1",
+		Date:    currentTime,
+		EndDate: currentTime,
+	}
+	s.events["2"] = storage.Event{
+		ID:      "2",
+		Date:    currentTime.Add(-2 * time.Hour),
+		EndDate: currentTime.Add(-2 * time.Hour),
+	}
+
+	err := s.ClearEvents(context.TODO(), time.Hour)
+
+	require.NoError(t, err)
+	require.Len(t, s.events, 1)
+
+	_, ok := s.events["1"]
+	require.True(t, ok)
+	_, ok = s.events["2"]
+	require.False(t, ok)
+}

@@ -7,6 +7,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/pelletier/go-toml/v2 v2.2.2
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.67.0
 	google.golang.org/protobuf v1.34.2

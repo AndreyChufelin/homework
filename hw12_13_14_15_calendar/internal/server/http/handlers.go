@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
@@ -48,13 +47,8 @@ func (s *Server) createEventHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getEventHandler(w http.ResponseWriter, r *http.Request) {
 	logg := s.logger.With("handler", "getEventHandler")
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		logg.Warn("wrong parameters", "path", parts)
-		s.errorResponse(w, http.StatusBadRequest, "ID parameter is missing")
-		return
-	}
-	id := parts[2]
+	id := r.PathValue("id")
+
 	event, err := s.app.GetEvent(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventDoesntExist) {
@@ -72,13 +66,8 @@ func (s *Server) getEventHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) deleteEventHandler(w http.ResponseWriter, r *http.Request) {
 	logg := s.logger.With("handler", "deleteEventHandler")
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		logg.Warn("wrong parameters", "path", parts)
-		s.errorResponse(w, http.StatusBadRequest, "ID parameter is missing")
-		return
-	}
-	id := parts[3]
+	id := r.PathValue("id")
+
 	err := s.app.DeleteEvent(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, storage.ErrEventDoesntExist) {
@@ -104,13 +93,7 @@ func (s *Server) editEventHandler(w http.ResponseWriter, r *http.Request) {
 		s.errorResponse(w, http.StatusBadRequest, "Bad request")
 		return
 	}
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		logg.Warn("wrong parameters", "path", parts)
-		s.errorResponse(w, http.StatusBadRequest, "ID parameter is missing")
-		return
-	}
-	id := parts[3]
+	id := r.PathValue("id")
 
 	validator := validator.New()
 	storage.ValidateEvent(*validator, event)
@@ -136,11 +119,9 @@ func (s *Server) editEventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDateParam(r *http.Request) (time.Time, error) {
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 4 {
-		return time.Time{}, fmt.Errorf("wrong parameters")
-	}
-	date, err := time.Parse("2006-01-02", parts[3])
+	param := r.PathValue("date")
+
+	date, err := time.Parse("2006-01-02", param)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("wrong date parameter")
 	}

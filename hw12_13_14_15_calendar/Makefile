@@ -1,14 +1,26 @@
 BIN := "./bin/calendar"
+SCHEDULER := "./bin/scheduler"
+SENDER := "./bin/sender"
 DOCKER_IMG="calendar:develop"
+DB_DRIVER=postgres
+DB_STRING=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
 build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+	go build -v -o $(SCHEDULER) -ldflags "$(LDFLAGS)" ./cmd/scheduler
+	go build -v -o $(SENDER) -ldflags "$(LDFLAGS)" ./cmd/sender
 
-run: build
-	$(BIN) -config ./configs/config.toml
+run-calendar: build
+	$(BIN) -config ./configs/config-calendar.toml
+
+run-scheduler: build
+	$(SCHEDULER) -config ./configs/config-scheduler.toml
+
+run-sender: build
+	$(SENDER) -config ./configs/config-sender.toml
 
 build-img:
 	docker build \
@@ -33,6 +45,11 @@ lint: install-lint-deps
 
 generate:
 	go generate ./...
-	
+
+migrate:
+	goose -dir migrations $(DB_DRIVER) $(DB_STRING) up
+
+migrate-down:
+	goose -dir migrations $(DB_DRIVER) $(DB_STRING) down
 
 .PHONY: build run build-img run-img version test lint

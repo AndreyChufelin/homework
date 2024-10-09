@@ -33,26 +33,28 @@ type Logger interface {
 }
 
 func NewServer(logger Logger, app Application, host, port string) *Server {
-	return &Server{logger: logger, app: app, addr: fmt.Sprintf("%s:%s", host, port)}
-}
-
-func (s *Server) Start() error {
-	s.logger.Info("starting server")
+	s := &Server{logger: logger, app: app, addr: fmt.Sprintf("%s:%s", host, port)}
 	mux := http.NewServeMux()
 	mux.Handle("/hello", loggingMiddleware(s.logger, http.HandlerFunc(s.hello)))
-	mux.Handle("/event/create", loggingMiddleware(s.logger, methodHandler(http.MethodPost, s.createEventHandler)))
-	mux.Handle("/event/delete/", loggingMiddleware(s.logger, methodHandler(http.MethodDelete, s.deleteEventHandler)))
-	mux.Handle("/event/edit/", loggingMiddleware(s.logger, methodHandler(http.MethodPut, s.editEventHandler)))
-	mux.Handle("/event/day/", loggingMiddleware(s.logger, methodHandler(http.MethodGet, s.getEventsDayHandler)))
-	mux.Handle("/event/week/", loggingMiddleware(s.logger, methodHandler(http.MethodGet, s.getEventsWeekHandler)))
-	mux.Handle("/event/month/", loggingMiddleware(s.logger, methodHandler(http.MethodGet, s.getEventsMonthHandler)))
-	mux.Handle("/event/", loggingMiddleware(s.logger, methodHandler(http.MethodGet, s.getEventHandler)))
+	mux.Handle("POST /event/create", loggingMiddleware(s.logger, http.HandlerFunc(s.createEventHandler)))
+	mux.Handle("DELETE /event/delete/{id}", loggingMiddleware(s.logger, http.HandlerFunc(s.deleteEventHandler)))
+	mux.Handle("PUT /event/edit/{id}", loggingMiddleware(s.logger, http.HandlerFunc(s.editEventHandler)))
+	mux.Handle("GET /event/day/{date}", loggingMiddleware(s.logger, http.HandlerFunc(s.getEventsDayHandler)))
+	mux.Handle("GET /event/week/{date}", loggingMiddleware(s.logger, http.HandlerFunc(s.getEventsWeekHandler)))
+	mux.Handle("GET /event/month/{date}", loggingMiddleware(s.logger, http.HandlerFunc(s.getEventsMonthHandler)))
+	mux.Handle("GET /event/{id}", loggingMiddleware(s.logger, http.HandlerFunc(s.getEventHandler)))
 
 	s.server = &http.Server{
 		Addr:              s.addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 2 * time.Second,
 	}
+
+	return s
+}
+
+func (s *Server) Start() error {
+	s.logger.Info("starting server")
 
 	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("server.Start: %w", err)
