@@ -16,6 +16,7 @@ type Event struct {
 	Description               string        `json:"description"`
 	UserID                    string        `json:"user_id"`
 	AdvanceNotificationPeriod time.Duration `json:"advance_notification_period"`
+	Notified                  bool          `json:"-"`
 }
 
 var (

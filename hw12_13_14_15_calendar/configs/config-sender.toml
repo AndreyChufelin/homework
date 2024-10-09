@@ -1,4 +1,4 @@
-storage = "sql"
+storage = "m"
 
 [logger]
 level = "INFO"
@@ -7,6 +7,8 @@ level = "INFO"
 user = "postgres"
 password = "postgres"
 name = "postgres"
+host = "localhost"
+port = "5432"
 
 [server]
 host = "localhost"
@@ -15,3 +17,9 @@ port = "8080"
 [grpc]
 host = "localhost"
 port = "50051"
+
+[queue]
+user = "guest"
+password = "guest"
+host = "localhost"
+port = "5672"

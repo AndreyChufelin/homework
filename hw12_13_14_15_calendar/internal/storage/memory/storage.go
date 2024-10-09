@@ -129,3 +129,52 @@ func (s *Storage) getEventsListTo(start time.Time, end time.Time) ([]storage.Eve
 
 	return result, nil
 }
+
+func (s *Storage) GetEventsToNotify(_ context.Context) ([]storage.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []storage.Event
+	currentDate := time.Now()
+
+	for _, event := range s.events {
+		if event.Date.Add(-event.AdvanceNotificationPeriod).Before(currentDate) && !event.Notified {
+			result = append(result, event)
+		}
+	}
+
+	return result, nil
+}
+
+func (s *Storage) MarkNotified(_ context.Context, ids []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	idSet := make(map[string]struct{})
+	for _, id := range ids {
+		idSet[id] = struct{}{}
+	}
+
+	for id, event := range s.events {
+		if _, exists := idSet[id]; exists {
+			event.Notified = true
+			s.events[id] = event
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) ClearEvents(_ context.Context, duration time.Duration) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	date := time.Now().Add(-duration)
+	for id, event := range s.events {
+		if event.Date.Before(date) {
+			delete(s.events, id)
+		}
+	}
+
+	return nil
+}

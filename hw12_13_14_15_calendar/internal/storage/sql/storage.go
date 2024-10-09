@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AndreyChufelin/homework/hw12_13_14_15_calendar/internal/storage"
@@ -16,19 +17,30 @@ type Storage struct {
 	user     string
 	password string
 	name     string
+	host     string
+	port     string
 }
 
-func New(user, password, name string) *Storage {
+func New(user, password, name, host, port string) *Storage {
 	return &Storage{
 		user:     user,
 		password: password,
 		name:     name,
+		host:     host,
+		port:     port,
 	}
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
 	db, err := sqlx.ConnectContext(ctx, "postgres",
-		"user=postgres dbname=postgres sslmode=disable password=postgres host=localhost",
+		fmt.Sprintf(
+			"user=%s dbname=%s sslmode=disable password=%s host=%s port=%s",
+			s.user,
+			s.name,
+			s.password,
+			s.host,
+			s.port,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("sqlstorage.Connect: %w", err)
@@ -62,6 +74,7 @@ type eventSQL struct {
 	Description               sql.NullString
 	UserID                    string         `db:"user_id"`
 	AdvanceNotificationPeriod sql.NullString `db:"advance_notification_period"`
+	Notified                  bool
 }
 
 func (eSQL eventSQL) sqlToEvent() storage.Event {
@@ -71,7 +84,12 @@ func (eSQL eventSQL) sqlToEvent() storage.Event {
 		event.Description = eSQL.Description.String
 	}
 	if eSQL.AdvanceNotificationPeriod.Valid {
-		event.AdvanceNotificationPeriod, _ = time.ParseDuration(eSQL.AdvanceNotificationPeriod.String)
+		period := eSQL.AdvanceNotificationPeriod.String
+		period = strings.Replace(period, ":", "h", 1)
+		period = strings.Replace(period, ":", "m", 1)
+		period += "s"
+
+		event.AdvanceNotificationPeriod, _ = time.ParseDuration(period)
 	}
 
 	event.ID = eSQL.ID
@@ -79,6 +97,7 @@ func (eSQL eventSQL) sqlToEvent() storage.Event {
 	event.Date = eSQL.Date
 	event.EndDate = eSQL.EndDate
 	event.UserID = eSQL.UserID
+	event.Notified = eSQL.Notified
 
 	return event
 }
@@ -197,4 +216,42 @@ func (s *Storage) GetEventsListMonth(ctx context.Context, date time.Time) ([]sto
 	}
 
 	return events, nil
+}
+
+func (s *Storage) GetEventsToNotify(ctx context.Context) ([]storage.Event, error) {
+	var eventsSQL []eventSQL
+	err := s.db.SelectContext(ctx,
+		&eventsSQL,
+		`SELECT id, title, date, user_id FROM events 
+		WHERE date - advance_notification_period <= CURRENT_DATE AND notified = false`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("sql.GetEventsToNotify: %w", err)
+	}
+	events := make([]storage.Event, len(eventsSQL))
+	for i, event := range eventsSQL {
+		events[i] = event.sqlToEvent()
+	}
+
+	return events, nil
+}
+
+func (s *Storage) MarkNotified(ctx context.Context, ids []string) error {
+	q := fmt.Sprintf("UPDATE events SET notified = true WHERE id IN (%s)", "'"+strings.Join(ids, "', '")+"'")
+	_, err := s.db.ExecContext(ctx, q)
+	if err != nil {
+		return fmt.Errorf("sqlstorage.MarkNotified: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) ClearEvents(ctx context.Context, duration time.Duration) error {
+	date := time.Now().Add(-duration)
+	_, err := s.db.ExecContext(ctx, "DELETE FROM events WHERE date < $1", date)
+	if err != nil {
+		return fmt.Errorf("failed to clear events: %w", err)
+	}
+
+	return nil
 }
