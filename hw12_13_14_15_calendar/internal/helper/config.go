@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -22,7 +23,18 @@ func NewConfig[C interface{}](path string) (*C, error) {
 		return nil, fmt.Errorf("NewConfig: failed reading file: %w", err)
 	}
 
-	err = toml.Unmarshal(b, &config)
+	tomlStr := string(b)
+	re := regexp.MustCompile(`\$\{(\w+)\}`)
+
+	tomlStr = re.ReplaceAllStringFunc(tomlStr, func(match string) string {
+		varName := match[2 : len(match)-1]
+		if value, exists := os.LookupEnv(varName); exists {
+			return value
+		}
+		return match
+	})
+
+	err = toml.Unmarshal([]byte(tomlStr), &config)
 	if err != nil {
 		return nil, fmt.Errorf("NewConfig: failed unmarshal toml: %w", err)
 	}

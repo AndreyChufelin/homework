@@ -48,6 +48,7 @@ func NewScheduler(queue Queue, clearInteval int, interval int, logger Logger, st
 }
 
 func (s *Scheduler) Start(ctx context.Context) {
+	s.logger.Info("starting scheduler")
 	ticker := time.NewTicker(time.Duration(s.interval) * time.Second)
 	defer ticker.Stop()
 

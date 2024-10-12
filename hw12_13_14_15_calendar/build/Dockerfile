@@ -30,7 +30,9 @@ LABEL MAINTAINERS="student@otus.ru"
 ENV BIN_FILE "/opt/calendar/calendar-app"
 COPY --from=build ${BIN_FILE} ${BIN_FILE}
 
-ENV CONFIG_FILE /etc/calendar/config.toml
-COPY ./configs/config.toml ${CONFIG_FILE}
+RUN apk add --no-cache gettext
 
-CMD ${BIN_FILE} -config ${CONFIG_FILE}
+ENV CONFIG_FILE /etc/calendar/config.toml
+COPY ./configs/config-calendar.toml ${CONFIG_FILE}
+
+CMD ["sh", "-c", "${BIN_FILE} -config ${CONFIG_FILE}"]

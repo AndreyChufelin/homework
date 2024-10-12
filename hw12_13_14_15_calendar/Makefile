@@ -52,4 +52,11 @@ migrate:
 migrate-down:
 	goose -dir migrations $(DB_DRIVER) $(DB_STRING) down
 
+up:
+	docker-compose -f ./deployments/docker-compose.yaml up
+
+down:
+	docker-compose -f ./deployments/docker-compose.yaml down
+
+
 .PHONY: build run build-img run-img version test lint

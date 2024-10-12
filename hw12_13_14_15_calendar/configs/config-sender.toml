@@ -1,25 +1,15 @@
-storage = "m"
-
 [logger]
 level = "INFO"
 
 [db]
-user = "postgres"
-password = "postgres"
-name = "postgres"
-host = "localhost"
-port = "5432"
-
-[server]
-host = "localhost"
-port = "8080"
-
-[grpc]
-host = "localhost"
-port = "50051"
+user = "${DB_USER}"
+password = "${DB_PASSWORD}"
+name = "${DB_NAME}"
+host = "${DB_HOST}"
+port = "${DB_PORT}"
 
 [queue]
-user = "guest"
-password = "guest"
-host = "localhost"
-port = "5672"
+user = "${RABBIT_USER}"
+password = "${RABBIT_PASSWORD}"
+host = "${RABBIT_HOST}"
+port = "${RABBIT_PORT}"

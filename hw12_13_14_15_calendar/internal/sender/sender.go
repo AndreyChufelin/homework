@@ -27,6 +27,7 @@ func NewSender(queue Queue, logger Logger) Sender {
 }
 
 func (s Sender) Start() error {
+	s.logger.Info("starting sender")
 	msgs, err := s.queue.Consume()
 	if err != nil {
 		return fmt.Errorf("faield consume notification queue: %w", err)

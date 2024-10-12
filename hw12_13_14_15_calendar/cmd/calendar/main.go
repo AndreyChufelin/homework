@@ -55,7 +55,7 @@ func main() {
 		Port:     config.DB.Port,
 	}, config.Storage)
 	if err != nil {
-		logg.Error("failed to run database", err)
+		logg.Error("failed to run database", "err", err)
 		cancel()
 	}
 	defer closeStorage()
