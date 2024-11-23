@@ -1,0 +1,16 @@
+# Собираем в гошке
+FROM golang:1.22 as build
+
+ENV BIN_FILE /opt/calendar/calendar-app
+ENV CODE_DIR /go/src/
+
+WORKDIR ${CODE_DIR}
+
+# Кэшируем слои с модулями
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . ${CODE_DIR}
+
+CMD ["go", "test", "-v", "-count=1", "-timeout", "2m", "--tags=integration", "/go/src/tests/integration/..."]

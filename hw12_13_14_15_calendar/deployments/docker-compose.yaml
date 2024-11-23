@@ -6,6 +6,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     environment:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -28,6 +30,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     environment:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -45,32 +49,66 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASSWORD: ${RABBIT_PASSWORD}
       RABBIT_HOST: ${RABBIT_HOST}
       RABBIT_PORT: ${RABBIT_PORT}
-
+  tests:
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile.tests
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REST_HOST: 0.0.0.0
+      REST_PORT: 8080
+      GRPC_HOST: 0.0.0.0
+      GRPC_PORT: 50051
+      RABBIT_USER: ${RABBIT_USER}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
+      RABBIT_HOST: ${RABBIT_HOST}
+      RABBIT_PORT: ${RABBIT_PORT}
+    profiles:
+      - tests
   db:
     image: postgres:17
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PORT: ${DB_PORT}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d postgres -U postgres"]
-      interval: 1s
+      interval: 10s
       timeout: 5s
       retries: 10
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - rabbitmq_data:/var/lib/rabbitmq
   rabbitmq:
     image: rabbitmq:4
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 10s
@@ -78,7 +116,23 @@ services:
       retries: 3
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+  migrations:
+    image: ghcr.io/kukymbr/goose-docker:3.22.1
+    restart: no
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=host=db port=${DB_PORT} user=${DB_USER} password=${DB_PASSWORD} dbname=${DB_NAME}
+      - GOOSE_VERBOSE=false
+    volumes:
+      - ../migrations:/migrations
+
+
 
 volumes:
   pgdata:
+    name: ${POSTGRES_VOLUME:-postgres_data_default}
   rabbitmq_data:
+    name: ${RABBIT_VOLUME:-rabbit_data_default}

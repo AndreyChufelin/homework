@@ -26,6 +26,18 @@ func (c *Consumer) Start() error {
 		return err
 	}
 
+	_, err = c.ch.QueueDeclare(
+		c.queue,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare queue: %w", err)
+	}
+
 	return nil
 }
 

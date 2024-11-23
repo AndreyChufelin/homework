@@ -234,21 +234,21 @@ func TestGetEventsToNotify(t *testing.T) {
 		Date:                      currentTime,
 		EndDate:                   currentTime,
 		AdvanceNotificationPeriod: 3600,
-		Notified:                  false,
+		NotificationStatus:        storage.StatusIdle,
 	}
 	s.events["2"] = storage.Event{
 		ID:                        "2",
 		Date:                      currentTime.Add(48 * time.Hour),
 		EndDate:                   currentTime.Add(48 * time.Hour),
 		AdvanceNotificationPeriod: 3600,
-		Notified:                  false,
+		NotificationStatus:        storage.StatusIdle,
 	}
 	s.events["3"] = storage.Event{
 		ID:                        "3",
 		Date:                      currentTime,
 		EndDate:                   currentTime,
 		AdvanceNotificationPeriod: 3600,
-		Notified:                  true,
+		NotificationStatus:        storage.StatusSending,
 	}
 
 	events, err := s.GetEventsToNotify(context.TODO())
@@ -261,16 +261,16 @@ func TestGetEventsToNotify(t *testing.T) {
 
 func TestMarkNotified(t *testing.T) {
 	s := New()
-	s.events["1"] = storage.Event{ID: "1", Notified: false}
-	s.events["2"] = storage.Event{ID: "2", Notified: false}
-	s.events["3"] = storage.Event{ID: "3", Notified: false}
+	s.events["1"] = storage.Event{ID: "1", NotificationStatus: storage.StatusIdle}
+	s.events["2"] = storage.Event{ID: "2", NotificationStatus: storage.StatusIdle}
+	s.events["3"] = storage.Event{ID: "3", NotificationStatus: storage.StatusIdle}
 
 	err := s.MarkNotified(context.TODO(), []string{"1", "3"})
 
 	require.NoError(t, err)
-	require.Equal(t, s.events["1"].Notified, true)
-	require.Equal(t, s.events["2"].Notified, false)
-	require.Equal(t, s.events["3"].Notified, true)
+	require.Equal(t, s.events["1"].NotificationStatus, storage.StatusSending)
+	require.Equal(t, s.events["2"].NotificationStatus, storage.StatusIdle)
+	require.Equal(t, s.events["3"].NotificationStatus, storage.StatusSending)
 }
 
 func TestClearEvents(t *testing.T) {

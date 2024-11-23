@@ -58,5 +58,7 @@ up:
 down:
 	docker-compose -f ./deployments/docker-compose.yaml down
 
+integration-tests:
+	./tests/integration/start.sh
 
 .PHONY: build run build-img run-img version test lint

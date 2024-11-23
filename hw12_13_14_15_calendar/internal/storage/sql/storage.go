@@ -72,9 +72,9 @@ type eventSQL struct {
 	Date                      time.Time
 	EndDate                   time.Time `db:"end_date"`
 	Description               sql.NullString
-	UserID                    string         `db:"user_id"`
-	AdvanceNotificationPeriod sql.NullString `db:"advance_notification_period"`
-	Notified                  bool
+	UserID                    string                     `db:"user_id"`
+	AdvanceNotificationPeriod sql.NullString             `db:"advance_notification_period"`
+	NotificationStatus        storage.NotificationStatus `db:"notification_status"`
 }
 
 func (eSQL eventSQL) sqlToEvent() storage.Event {
@@ -97,7 +97,7 @@ func (eSQL eventSQL) sqlToEvent() storage.Event {
 	event.Date = eSQL.Date
 	event.EndDate = eSQL.EndDate
 	event.UserID = eSQL.UserID
-	event.Notified = eSQL.Notified
+	event.NotificationStatus = eSQL.NotificationStatus
 
 	return event
 }
@@ -223,7 +223,7 @@ func (s *Storage) GetEventsToNotify(ctx context.Context) ([]storage.Event, error
 	err := s.db.SelectContext(ctx,
 		&eventsSQL,
 		`SELECT id, title, date, user_id FROM events 
-		WHERE date - advance_notification_period <= CURRENT_DATE AND notified = false`,
+		WHERE date - advance_notification_period <= CURRENT_DATE AND notification_status = 'idle'`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("sql.GetEventsToNotify: %w", err)
@@ -237,7 +237,7 @@ func (s *Storage) GetEventsToNotify(ctx context.Context) ([]storage.Event, error
 }
 
 func (s *Storage) MarkNotified(ctx context.Context, ids []string) error {
-	q := fmt.Sprintf("UPDATE events SET notified = true WHERE id IN (%s)", "'"+strings.Join(ids, "', '")+"'")
+	q := fmt.Sprintf("UPDATE events SET notification_status='sending' WHERE id IN (%s)", "'"+strings.Join(ids, "', '")+"'")
 	_, err := s.db.ExecContext(ctx, q)
 	if err != nil {
 		return fmt.Errorf("sqlstorage.MarkNotified: %w", err)
@@ -251,6 +251,15 @@ func (s *Storage) ClearEvents(ctx context.Context, duration time.Duration) error
 	_, err := s.db.ExecContext(ctx, "DELETE FROM events WHERE date < $1", date)
 	if err != nil {
 		return fmt.Errorf("failed to clear events: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) SetNotified(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, "UPDATE events SET notification_status='sent' WHERE id = $1", id)
+	if err != nil {
+		return fmt.Errorf("sqlstorage.MarkNotified: %w", err)
 	}
 
 	return nil

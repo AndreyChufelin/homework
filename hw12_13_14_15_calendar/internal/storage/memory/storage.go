@@ -138,7 +138,8 @@ func (s *Storage) GetEventsToNotify(_ context.Context) ([]storage.Event, error) 
 	currentDate := time.Now()
 
 	for _, event := range s.events {
-		if event.Date.Add(-event.AdvanceNotificationPeriod).Before(currentDate) && !event.Notified {
+		if event.Date.Add(-event.AdvanceNotificationPeriod).Before(currentDate) &&
+			event.NotificationStatus == storage.StatusIdle {
 			result = append(result, event)
 		}
 	}
@@ -157,7 +158,7 @@ func (s *Storage) MarkNotified(_ context.Context, ids []string) error {
 
 	for id, event := range s.events {
 		if _, exists := idSet[id]; exists {
-			event.Notified = true
+			event.NotificationStatus = storage.StatusSending
 			s.events[id] = event
 		}
 	}
@@ -175,6 +176,17 @@ func (s *Storage) ClearEvents(_ context.Context, duration time.Duration) error {
 			delete(s.events, id)
 		}
 	}
+
+	return nil
+}
+
+func (s *Storage) SetNotified(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	event := s.events[id]
+	event.NotificationStatus = storage.StatusSent
+	s.events[id] = event
 
 	return nil
 }
