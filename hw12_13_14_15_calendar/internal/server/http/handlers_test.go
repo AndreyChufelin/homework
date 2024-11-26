@@ -26,6 +26,15 @@ func newLogger(t *testing.T) *logger.Logger {
 	return logg
 }
 
+func newServer(t *testing.T, path string, handler http.Handler) *http.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.Handle(path, handler)
+	return &http.Server{
+		Handler: mux,
+	}
+}
+
 func TestGetEventHandler(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -68,15 +77,19 @@ func TestGetEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/event/1", nil)
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("GetEvent", mock.Anything, "1").Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.getEventHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "GET /event/{id}", http.HandlerFunc(server.getEventHandler))
+			server.server.Handler.ServeHTTP(w, req)
 
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
@@ -138,15 +151,19 @@ func TestCreateEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/create", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequest(http.MethodPost, "/event/create", bytes.NewBufferString(tt.body))
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("CreateEvent", mock.Anything, eventArg).Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.createEventHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "POST /event/create", http.HandlerFunc(server.createEventHandler))
+			server.server.Handler.ServeHTTP(w, req)
 
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
@@ -162,14 +179,18 @@ func TestCreateEventHandlerValidation(t *testing.T) {
 	"date": "2024-09-23T00:00:00Z",
 	"end_date": "2024-09-20T00:00:00Z"
 }`
-	req := httptest.NewRequest(http.MethodGet, "/events/create", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/event/create", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 
 	logg := newLogger(t)
 	app := mocks.NewApplication(t)
-	server := NewServer(logg, app, "", "")
 
-	server.createEventHandler(w, req)
+	server := &Server{
+		logger: logg,
+		app:    app,
+	}
+	server.server = newServer(t, "POST /event/create", http.HandlerFunc(server.createEventHandler))
+	server.server.Handler.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusPartialContent, w.Code)
 	require.Equal(t, `{
@@ -216,15 +237,19 @@ func TestDeleteEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/delete/1", nil)
+			req := httptest.NewRequest(http.MethodDelete, "/event/delete/1", nil)
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("DeleteEvent", mock.Anything, "1").Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.deleteEventHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "DELETE /event/delete/{id}", http.HandlerFunc(server.deleteEventHandler))
+			server.server.Handler.ServeHTTP(w, req)
 
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
@@ -286,15 +311,19 @@ func TestEditEventHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/edit/1", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequest(http.MethodPut, "/event/edit/1", bytes.NewBufferString(tt.body))
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("EditEvent", mock.Anything, "1", eventArg).Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.editEventHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "PUT /event/edit/{id}", http.HandlerFunc(server.editEventHandler))
+			server.server.Handler.ServeHTTP(w, req)
 
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
@@ -310,14 +339,18 @@ func TestEditEventHandlerValidation(t *testing.T) {
 	"date": "2024-09-23T00:00:00Z",
 	"end_date": "2024-09-20T00:00:00Z"
 }`
-	req := httptest.NewRequest(http.MethodGet, "/events/edit/1", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPut, "/event/edit/1", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 
 	logg := newLogger(t)
 	app := mocks.NewApplication(t)
-	server := NewServer(logg, app, "", "")
 
-	server.editEventHandler(w, req)
+	server := &Server{
+		logger: logg,
+		app:    app,
+	}
+	server.server = newServer(t, "PUT /event/edit/{id}", http.HandlerFunc(server.editEventHandler))
+	server.server.Handler.ServeHTTP(w, req)
 
 	require.Equal(t, http.StatusPartialContent, w.Code)
 	require.Equal(t, `{
@@ -385,15 +418,20 @@ func getDate(t *testing.T) time.Time {
 func TestGetEventsDayHandler(t *testing.T) {
 	for _, tt := range testsEventList {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/day/2024-09-23", nil)
+			req := httptest.NewRequest(http.MethodGet, "/event/day/2024-09-23", nil)
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("GetEventsListDay", mock.Anything, getDate(t)).Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.getEventsDayHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "GET /event/day/{date}", http.HandlerFunc(server.getEventsDayHandler))
+			server.server.Handler.ServeHTTP(w, req)
+
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
 		})
@@ -403,15 +441,20 @@ func TestGetEventsDayHandler(t *testing.T) {
 func TestGetEventsWeekHandler(t *testing.T) {
 	for _, tt := range testsEventList {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/week/2024-09-23", nil)
+			req := httptest.NewRequest(http.MethodGet, "/event/week/2024-09-23", nil)
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("GetEventsListWeek", mock.Anything, getDate(t)).Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.getEventsWeekHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "GET /event/week/{date}", http.HandlerFunc(server.getEventsWeekHandler))
+			server.server.Handler.ServeHTTP(w, req)
+
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
 		})
@@ -421,15 +464,20 @@ func TestGetEventsWeekHandler(t *testing.T) {
 func TestGetEventsMonthHandler(t *testing.T) {
 	for _, tt := range testsEventList {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/events/week/2024-09-23", nil)
+			req := httptest.NewRequest(http.MethodGet, "/event/month/2024-09-23", nil)
 			w := httptest.NewRecorder()
 
 			logg := newLogger(t)
 			app := mocks.NewApplication(t)
 			app.On("GetEventsListMonth", mock.Anything, getDate(t)).Return(tt.returns...)
-			server := NewServer(logg, app, "", "")
 
-			server.getEventsMonthHandler(w, req)
+			server := &Server{
+				logger: logg,
+				app:    app,
+			}
+			server.server = newServer(t, "GET /event/month/{date}", http.HandlerFunc(server.getEventsMonthHandler))
+			server.server.Handler.ServeHTTP(w, req)
+
 			require.Equal(t, tt.status, w.Code)
 			require.Equal(t, tt.want, w.Body.String())
 		})

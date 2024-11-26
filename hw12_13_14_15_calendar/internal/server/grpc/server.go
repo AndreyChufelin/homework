@@ -17,7 +17,7 @@ import (
 
 type Server struct {
 	pb.UnimplementedCalendarServer
-	logger logger.Logger
+	logger Logger
 	app    Application
 	server *grpc.Server
 	addr   string

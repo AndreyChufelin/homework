@@ -25,7 +25,7 @@ func (s *Server) CreateEvent(ctx context.Context, request *pb.CreateEventRequest
 			return nil, status.Error(codes.AlreadyExists, "event already exists")
 		}
 		logg.Error("failed create event", "error", err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	return nil, nil
 }
@@ -39,7 +39,7 @@ func (s *Server) GetEvent(ctx context.Context, request *pb.GetEventRequest) (*pb
 			return nil, status.Error(codes.NotFound, "event doesn't exist")
 		}
 		logg.Error("failed get event", "error", err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	return &pb.GetEventResponse{Event: eventToProto(event)}, nil
 }
@@ -58,7 +58,7 @@ func (s *Server) EditEvent(ctx context.Context, request *pb.EditEventRequest) (*
 			return nil, status.Error(codes.NotFound, "event doesn't exist")
 		}
 		logg.Error("failed edit event", "error", err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	return nil, nil
 }
@@ -72,7 +72,7 @@ func (s *Server) DeleteEvent(ctx context.Context, request *pb.DeleteEventRequest
 			return nil, status.Error(codes.NotFound, "event doesn't exist")
 		}
 		logg.Error("failed delete event", "error", err)
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 	return nil, nil
 }
