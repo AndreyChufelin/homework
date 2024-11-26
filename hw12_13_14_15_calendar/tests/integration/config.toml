@@ -1,5 +1,16 @@
+interval = 1
+clearInterval = 365
+
 [logger]
 level = "INFO"
+
+[server]
+host = "${REST_HOST}"
+port = "${REST_PORT}"
+
+[grpc]
+host = "${GRPC_HOST}"
+port = "${GRPC_PORT}"
 
 [db]
 user = "${DB_USER}"

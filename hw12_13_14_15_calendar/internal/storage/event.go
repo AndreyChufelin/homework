@@ -8,15 +8,23 @@ import (
 	"github.com/google/uuid"
 )
 
+type NotificationStatus string
+
+const (
+	StatusIdle    NotificationStatus = "idle"
+	StatusSending NotificationStatus = "sending"
+	StatusSent    NotificationStatus = "sent"
+)
+
 type Event struct {
-	ID                        string        `json:"id"`
-	Title                     string        `json:"title"`
-	Date                      time.Time     `json:"date"`
-	EndDate                   time.Time     `json:"end_date"`
-	Description               string        `json:"description"`
-	UserID                    string        `json:"user_id"`
-	AdvanceNotificationPeriod time.Duration `json:"advance_notification_period"`
-	Notified                  bool          `json:"-"`
+	ID                        string             `json:"id"`
+	Title                     string             `json:"title"`
+	Date                      time.Time          `json:"date"`
+	EndDate                   time.Time          `json:"end_date"`
+	Description               string             `json:"description"`
+	UserID                    string             `json:"user_id"`
+	AdvanceNotificationPeriod time.Duration      `json:"advance_notification_period"`
+	NotificationStatus        NotificationStatus `json:"-"`
 }
 
 var (

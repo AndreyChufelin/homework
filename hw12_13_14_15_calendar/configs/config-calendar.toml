@@ -4,16 +4,16 @@ storage = "sql"
 level = "INFO"
 
 [db]
-user = "postgres"
-password = "postgres"
-name = "postgres"
-host = "localhost"
-port = "5432"
+user = "${DB_USER}"
+password = "${DB_PASSWORD}"
+name = "${DB_NAME}"
+host = "${DB_HOST}"
+port = "${DB_PORT}"
 
 [server]
-host = "localhost"
-port = "8080"
+host = "${REST_HOST}"
+port = "${REST_PORT}"
 
 [grpc]
-host = "localhost"
-port = "50051"
+host = "${GRPC_HOST}"
+port = "${GRPC_PORT}"

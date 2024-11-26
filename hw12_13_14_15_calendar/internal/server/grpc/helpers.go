@@ -80,11 +80,11 @@ func getEventsDate(
 		return nil, status.Error(codes.Internal, "Internal server error")
 	}
 
-	resopnse := make([]*pb.Event, len(events))
+	response := make([]*pb.Event, len(events))
 	for i, event := range events {
 		e := event
-		resopnse[i] = eventToProto(&e)
+		response[i] = eventToProto(&e)
 	}
 
-	return resopnse, nil
+	return response, nil
 }

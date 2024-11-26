@@ -21,6 +21,7 @@ type Storage interface {
 	GetEventsToNotify(ctx context.Context) ([]storage.Event, error)
 	MarkNotified(ctx context.Context, ids []string) error
 	ClearEvents(ctx context.Context, duration time.Duration) error
+	SetNotified(ctx context.Context, id string) error
 }
 
 type DBConfig struct {

@@ -38,7 +38,7 @@ test:
 	go test -race ./internal/...
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
+	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.62.0
 
 lint: install-lint-deps
 	golangci-lint run ./...
@@ -51,5 +51,14 @@ migrate:
 
 migrate-down:
 	goose -dir migrations $(DB_DRIVER) $(DB_STRING) down
+
+up:
+	docker-compose -f ./deployments/docker-compose.yaml up
+
+down:
+	docker-compose -f ./deployments/docker-compose.yaml down
+
+integration-tests:
+	./tests/integration/start.sh
 
 .PHONY: build run build-img run-img version test lint
