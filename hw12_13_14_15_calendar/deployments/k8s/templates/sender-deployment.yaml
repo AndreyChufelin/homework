@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sender
+  template:
+    metadata:
+      labels:
+        app: sender
+    spec:
+      containers:
+      - name: sender
+        image: "{{ .Values.sender.image }}"
+        env:
+        - name: DB_USER
+          value: "{{ .Values.db.user }}"
+        - name: DB_PASSWORD
+          value: "{{ .Values.db.password }}"
+        - name: DB_NAME
+          value: "{{ .Values.db.name }}"
+        - name: DB_HOST
+          value: "{{ .Values.db.host }}"
+        - name: DB_PORT
+          value: "{{ .Values.db.port }}"
+        - name: RABBIT_USER
+          value: "{{ .Values.rabbitmq.username }}"
+        - name: RABBIT_PASSWORD
+          value: "{{ .Values.rabbitmq.password }}"
+        - name: RABBIT_HOST
+          value: "{{ .Values.rabbitmq.host }}"
+        - name: RABBIT_PORT
+          value: "{{ .Values.rabbitmq.port }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sender
+spec:
+  ports:
+  - port: 8082
+    targetPort: 8082
+  selector:
+    app: sender
+

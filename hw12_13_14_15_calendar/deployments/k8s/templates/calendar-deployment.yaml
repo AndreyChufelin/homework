@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calendar
+  template:
+    metadata:
+      labels:
+        app: calendar
+    spec:
+      containers:
+      - name: calendar
+        image: "{{ .Values.calendar.image }}"
+        ports:
+        - containerPort: 8080
+        - containerPort: 50051
+        env:
+        - name: DB_USER
+          value: "{{ .Values.db.user }}"
+        - name: DB_PASSWORD
+          value: "{{ .Values.db.password }}"
+        - name: DB_NAME
+          value: "{{ .Values.db.name }}"
+        - name: DB_HOST
+          value: "{{ .Values.db.host }}"
+        - name: DB_PORT
+          value: "{{ .Values.db.port }}"
+        - name: REST_HOST
+          value: "0.0.0.0"
+        - name: REST_PORT
+          value: "8080"
+        - name: GRPC_HOST
+          value: "0.0.0.0"
+        - name: GRPC_PORT
+          value: "50051"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calendar
+spec:
+  selector:
+    app: calendar
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      protocol: TCP
+      port: 50051
+      targetPort: 50051
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: calendar-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: calendar
+            port:
+              number: 8080
+

@@ -1,0 +1,25 @@
+calendar:
+  image: "andreychufelin/calendar:latest"
+
+scheduler:
+  image: "andreychufelin/scheduler:latest"
+
+sender:
+  image: "andreychufelin/sender:latest"
+
+db:
+  image: "postgres:17"
+  name: "calendar_db"
+  user: "postgres"
+  password: "postgres"
+  host: "db"
+  port: 5432
+
+rabbitmq:
+  image: "rabbitmq:4"
+  username: "guest"
+  password: "guest"
+  host: "rabbitmq"
+  port: 5672
+  management_port: 15672
+
